@@ -1,0 +1,33 @@
+{
+  "name": "amirjahfar/wordpress-mcp-connector",
+  "description": "WordPress MCP Connector - Comprehensive Model Context Protocol integration for WordPress with Settings, Menus, Widgets, and Themes management",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Amir Jahfar",
+      "email": "amirjahfar@gmail.com"
+    }
+  ],
+  "keywords": [
+    "wordpress",
+    "mcp",
+    "model-context-protocol",
+    "abilities-api",
+    "automation",
+    "rest-api"
+  ],
+  "homepage": "https://github.com/amirjahfar1/wordpress-mcp-connector",
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "phpcs": "^3.7",
+    "phpstan/phpstan": "^1.0"
+  },
+  "autoload": {
+    "files": [
+      "wordpress-mcp-connector.php"
+    ]
+  }
+}
