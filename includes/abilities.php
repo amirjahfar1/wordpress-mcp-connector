@@ -52,6 +52,7 @@ class WMC_Abilities {
 		self::register_menu_abilities();
 		self::register_widget_abilities();
 		self::register_theme_abilities();
+		self::register_seo_abilities();
 	}
 
 	/**
@@ -2487,6 +2488,409 @@ class WMC_Abilities {
 			'mod_name'    => $input['mod_name'],
 			'mod_value'   => $input['mod_value'],
 			'message'     => 'Theme setting updated successfully',
+		);
+	}
+
+	/**
+	 * ==================== SEO META ABILITIES ====================
+	 */
+
+	private static function register_seo_abilities() {
+		// Get Post SEO Meta
+		wp_register_ability(
+			'wmc/get-post-seo-meta',
+			array(
+				'label'       => 'Get Post SEO Meta',
+				'description' => 'Retrieve SEO metadata (title, description) from Yoast, Rank Math, or All in One SEO plugins',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id' => array(
+							'type'        => 'integer',
+							'description' => 'Post ID (required)',
+						),
+					),
+					'required' => array( 'post_id' ),
+				),
+				'output_schema' => array(
+					'type' => 'object',
+				),
+				'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+				'callback'            => array( self::class, 'get_post_seo_meta' ),
+			)
+		);
+
+		// Update Post SEO Meta
+		wp_register_ability(
+			'wmc/update-post-seo-meta',
+			array(
+				'label'       => 'Update Post SEO Meta',
+				'description' => 'Update SEO metadata (title, description) for posts in Yoast, Rank Math, or All in One SEO',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id'        => array(
+							'type'        => 'integer',
+							'description' => 'Post ID (required)',
+						),
+						'meta_title'     => array(
+							'type'        => 'string',
+							'description' => 'SEO meta title',
+						),
+						'meta_description' => array(
+							'type'        => 'string',
+							'description' => 'SEO meta description',
+						),
+						'meta_robots'    => array(
+							'type'        => 'string',
+							'description' => 'SEO robots meta (e.g., "index,follow")',
+						),
+					),
+					'required' => array( 'post_id' ),
+				),
+				'output_schema' => array(
+					'type' => 'object',
+				),
+				'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+				'callback'            => array( self::class, 'update_post_seo_meta' ),
+			)
+		);
+
+		// Get Page SEO Meta
+		wp_register_ability(
+			'wmc/get-page-seo-meta',
+			array(
+				'label'       => 'Get Page SEO Meta',
+				'description' => 'Retrieve SEO metadata (title, description) from Yoast, Rank Math, or All in One SEO plugins for pages',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'page_id' => array(
+							'type'        => 'integer',
+							'description' => 'Page ID (required)',
+						),
+					),
+					'required' => array( 'page_id' ),
+				),
+				'output_schema' => array(
+					'type' => 'object',
+				),
+				'permission_callback' => fn() => current_user_can( 'edit_pages' ),
+				'callback'            => array( self::class, 'get_page_seo_meta' ),
+			)
+		);
+
+		// Update Page SEO Meta
+		wp_register_ability(
+			'wmc/update-page-seo-meta',
+			array(
+				'label'       => 'Update Page SEO Meta',
+				'description' => 'Update SEO metadata (title, description) for pages in Yoast, Rank Math, or All in One SEO',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'page_id'        => array(
+							'type'        => 'integer',
+							'description' => 'Page ID (required)',
+						),
+						'meta_title'     => array(
+							'type'        => 'string',
+							'description' => 'SEO meta title',
+						),
+						'meta_description' => array(
+							'type'        => 'string',
+							'description' => 'SEO meta description',
+						),
+						'meta_robots'    => array(
+							'type'        => 'string',
+							'description' => 'SEO robots meta (e.g., "index,follow")',
+						),
+					),
+					'required' => array( 'page_id' ),
+				),
+				'output_schema' => array(
+					'type' => 'object',
+				),
+				'permission_callback' => fn() => current_user_can( 'edit_pages' ),
+				'callback'            => array( self::class, 'update_page_seo_meta' ),
+			)
+		);
+	}
+
+	/**
+	 * Detect which SEO plugin is active
+	 */
+	private static function detect_seo_plugin() {
+		if ( defined( 'WPSEO_FILE' ) ) {
+			return 'yoast'; // Yoast SEO
+		} elseif ( defined( 'RANK_MATH_FILE' ) ) {
+			return 'rankmath'; // Rank Math
+		} elseif ( function_exists( 'aioseo' ) ) {
+			return 'aioseo'; // All in One SEO
+		}
+		return null;
+	}
+
+	/**
+	 * Get SEO Meta for Post
+	 */
+	public static function get_post_seo_meta( $input ) {
+		// CHECK PERMISSION
+		if ( ! self::is_enabled( 'seo', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		$post_id = $input['post_id'];
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			return array(
+				'success' => false,
+				'message' => 'Post not found',
+			);
+		}
+
+		$seo_plugin = self::detect_seo_plugin();
+		$seo_meta = array(
+			'post_id'    => $post_id,
+			'post_title' => $post->post_title,
+			'post_url'   => get_permalink( $post_id ),
+			'plugin'     => $seo_plugin,
+		);
+
+		if ( $seo_plugin === 'yoast' ) {
+			$seo_meta['meta_title'] = get_post_meta( $post_id, '_yoast_wpseo_title', true );
+			$seo_meta['meta_description'] = get_post_meta( $post_id, '_yoast_wpseo_metadesc', true );
+			$seo_meta['meta_robots'] = get_post_meta( $post_id, '_yoast_wpseo_meta-robots-noindex', true );
+			$seo_meta['focus_keyword'] = get_post_meta( $post_id, '_yoast_wpseo_focuskw', true );
+		} elseif ( $seo_plugin === 'rankmath' ) {
+			$seo_meta['meta_title'] = get_post_meta( $post_id, 'rank_math_title', true );
+			$seo_meta['meta_description'] = get_post_meta( $post_id, 'rank_math_description', true );
+			$seo_meta['meta_robots'] = get_post_meta( $post_id, 'rank_math_robots', true );
+			$seo_meta['focus_keyword'] = get_post_meta( $post_id, 'rank_math_focus_keyword', true );
+		} elseif ( $seo_plugin === 'aioseo' ) {
+			$aioseo_data = get_post_meta( $post_id, '_aioseo_title', true );
+			$seo_meta['meta_title'] = $aioseo_data ?: get_post_meta( $post_id, '_aioseo_title', true );
+			$seo_meta['meta_description'] = get_post_meta( $post_id, '_aioseo_description', true );
+			$seo_meta['meta_robots'] = get_post_meta( $post_id, '_aioseo_robots', true );
+		}
+
+		return array(
+			'success'  => true,
+			'seo_meta' => $seo_meta,
+		);
+	}
+
+	/**
+	 * Update SEO Meta for Post
+	 */
+	public static function update_post_seo_meta( $input ) {
+		// CHECK PERMISSION
+		if ( ! self::is_enabled( 'seo', 'write' ) ) {
+			return self::get_disabled_error( 'Update' );
+		}
+
+		$post_id = $input['post_id'];
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			return array(
+				'success' => false,
+				'message' => 'Post not found',
+			);
+		}
+
+		$seo_plugin = self::detect_seo_plugin();
+		$updated = false;
+
+		if ( $seo_plugin === 'yoast' ) {
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $post_id, '_yoast_wpseo_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $post_id, '_yoast_wpseo_metadesc', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_robots'] ) ) {
+				update_post_meta( $post_id, '_yoast_wpseo_meta-robots-noindex', sanitize_text_field( $input['meta_robots'] ) );
+				$updated = true;
+			}
+		} elseif ( $seo_plugin === 'rankmath' ) {
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $post_id, 'rank_math_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $post_id, 'rank_math_description', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_robots'] ) ) {
+				update_post_meta( $post_id, 'rank_math_robots', sanitize_text_field( $input['meta_robots'] ) );
+				$updated = true;
+			}
+		} elseif ( $seo_plugin === 'aioseo' ) {
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $post_id, '_aioseo_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $post_id, '_aioseo_description', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_robots'] ) ) {
+				update_post_meta( $post_id, '_aioseo_robots', sanitize_text_field( $input['meta_robots'] ) );
+				$updated = true;
+			}
+		} else {
+			// Fallback: Update generic meta fields if no plugin detected
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $post_id, '_meta_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $post_id, '_meta_description', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+		}
+
+		return array(
+			'success'   => $updated,
+			'post_id'   => $post_id,
+			'plugin'    => $seo_plugin,
+			'message'   => $updated ? 'SEO meta updated successfully' : 'No SEO plugin detected or no fields updated',
+		);
+	}
+
+	/**
+	 * Get SEO Meta for Page
+	 */
+	public static function get_page_seo_meta( $input ) {
+		// CHECK PERMISSION
+		if ( ! self::is_enabled( 'seo', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		$page_id = $input['page_id'];
+		$page = get_post( $page_id );
+
+		if ( ! $page || $page->post_type !== 'page' ) {
+			return array(
+				'success' => false,
+				'message' => 'Page not found',
+			);
+		}
+
+		$seo_plugin = self::detect_seo_plugin();
+		$seo_meta = array(
+			'page_id'    => $page_id,
+			'page_title' => $page->post_title,
+			'page_url'   => get_permalink( $page_id ),
+			'plugin'     => $seo_plugin,
+		);
+
+		if ( $seo_plugin === 'yoast' ) {
+			$seo_meta['meta_title'] = get_post_meta( $page_id, '_yoast_wpseo_title', true );
+			$seo_meta['meta_description'] = get_post_meta( $page_id, '_yoast_wpseo_metadesc', true );
+			$seo_meta['meta_robots'] = get_post_meta( $page_id, '_yoast_wpseo_meta-robots-noindex', true );
+		} elseif ( $seo_plugin === 'rankmath' ) {
+			$seo_meta['meta_title'] = get_post_meta( $page_id, 'rank_math_title', true );
+			$seo_meta['meta_description'] = get_post_meta( $page_id, 'rank_math_description', true );
+			$seo_meta['meta_robots'] = get_post_meta( $page_id, 'rank_math_robots', true );
+		} elseif ( $seo_plugin === 'aioseo' ) {
+			$seo_meta['meta_title'] = get_post_meta( $page_id, '_aioseo_title', true );
+			$seo_meta['meta_description'] = get_post_meta( $page_id, '_aioseo_description', true );
+			$seo_meta['meta_robots'] = get_post_meta( $page_id, '_aioseo_robots', true );
+		}
+
+		return array(
+			'success'  => true,
+			'seo_meta' => $seo_meta,
+		);
+	}
+
+	/**
+	 * Update SEO Meta for Page
+	 */
+	public static function update_page_seo_meta( $input ) {
+		// CHECK PERMISSION
+		if ( ! self::is_enabled( 'seo', 'write' ) ) {
+			return self::get_disabled_error( 'Update' );
+		}
+
+		$page_id = $input['page_id'];
+		$page = get_post( $page_id );
+
+		if ( ! $page || $page->post_type !== 'page' ) {
+			return array(
+				'success' => false,
+				'message' => 'Page not found',
+			);
+		}
+
+		$seo_plugin = self::detect_seo_plugin();
+		$updated = false;
+
+		if ( $seo_plugin === 'yoast' ) {
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $page_id, '_yoast_wpseo_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $page_id, '_yoast_wpseo_metadesc', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_robots'] ) ) {
+				update_post_meta( $page_id, '_yoast_wpseo_meta-robots-noindex', sanitize_text_field( $input['meta_robots'] ) );
+				$updated = true;
+			}
+		} elseif ( $seo_plugin === 'rankmath' ) {
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $page_id, 'rank_math_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $page_id, 'rank_math_description', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_robots'] ) ) {
+				update_post_meta( $page_id, 'rank_math_robots', sanitize_text_field( $input['meta_robots'] ) );
+				$updated = true;
+			}
+		} elseif ( $seo_plugin === 'aioseo' ) {
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $page_id, '_aioseo_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $page_id, '_aioseo_description', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_robots'] ) ) {
+				update_post_meta( $page_id, '_aioseo_robots', sanitize_text_field( $input['meta_robots'] ) );
+				$updated = true;
+			}
+		} else {
+			// Fallback: Update generic meta fields if no plugin detected
+			if ( isset( $input['meta_title'] ) ) {
+				update_post_meta( $page_id, '_meta_title', sanitize_text_field( $input['meta_title'] ) );
+				$updated = true;
+			}
+			if ( isset( $input['meta_description'] ) ) {
+				update_post_meta( $page_id, '_meta_description', sanitize_text_field( $input['meta_description'] ) );
+				$updated = true;
+			}
+		}
+
+		return array(
+			'success'   => $updated,
+			'page_id'   => $page_id,
+			'plugin'    => $seo_plugin,
+			'message'   => $updated ? 'SEO meta updated successfully' : 'No SEO plugin detected or no fields updated',
 		);
 	}
 }

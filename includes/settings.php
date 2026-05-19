@@ -362,6 +362,30 @@ class WMC_Settings {
 							<td style="color: #d63638;">Allow theme activation and customization</td>
 						</tr>
 					</table>
+
+					<h2>🔍 SEO Meta Management (Yoast, Rank Math, All in One SEO)</h2>
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="wmc_seo_read">
+									<input type="checkbox" id="wmc_seo_read" name="wmc_abilities_config[seo][read]" value="1"
+										<?php checked( self::is_ability_enabled( 'seo', 'read' ), true ); ?> />
+									Read SEO Meta (Get)
+								</label>
+							</th>
+							<td>Allow retrieving SEO metadata (title, description) from posts and pages</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="wmc_seo_write">
+									<input type="checkbox" id="wmc_seo_write" name="wmc_abilities_config[seo][write]" value="1"
+										<?php checked( self::is_ability_enabled( 'seo', 'write' ), true ); ?> />
+									Update SEO Meta ⚠️
+								</label>
+							</th>
+							<td style="color: #d63638;">Allow modification of SEO metadata (meta title, description, robots)</td>
+						</tr>
+					</table>
 				</div>
 
 				<?php submit_button(); ?>
@@ -423,6 +447,7 @@ class WMC_Settings {
 			'menus'      => array( 'read' => 1, 'write' => 1 ),
 			'widgets'    => array( 'read' => 1, 'write' => 1 ),
 			'themes'     => array( 'read' => 1, 'write' => 1 ),
+			'seo'        => array( 'read' => 1, 'write' => 1 ),
 		);
 	}
 }
