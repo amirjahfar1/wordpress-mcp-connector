@@ -3,7 +3,7 @@
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://github.com/essentialshoodie
  * Description: Exposes full WordPress CRUD operations via Abilities API for MCP integration. Manage posts, pages, categories, tags, media, comments, users, settings, menus, widgets, and themes.
- * Version: 2.0.0
+ * Version: 2.1.0
  * Author: WordPress MCP Team
  * License: GPL-2.0-or-later
  * Text Domain: wordpress-mcp-connector
