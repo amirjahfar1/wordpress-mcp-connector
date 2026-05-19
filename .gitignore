@@ -42,3 +42,12 @@ wp-content/backup/
 .vscode
 .idea/
 *.bak
+
+# Claude Code
+.claude/
+claude.md
+
+# Test/Temp files
+post_data.json
+seo_post_content.html
+*.zip
