@@ -34,6 +34,58 @@ class WMC_Abilities {
 	}
 
 	/**
+	 * Resolve a scheduled-publish date for a post/page.
+	 *
+	 * Accepts "YYYY-MM-DD HH:MM:SS" (WP local format) or ISO 8601 (e.g. "2026-06-01T10:00:00",
+	 * "2026-06-01T10:00:00Z", "2026-06-01T10:00:00+05:00"). The site's timezone is used when
+	 * the input has no timezone designator.
+	 *
+	 * Returns:
+	 *   - null if no date was supplied (caller continues as usual)
+	 *   - WP_Error on invalid input
+	 *   - array{ post_status, post_date, post_date_gmt } when a date is set. If the date is
+	 *     in the future and the caller asked for "publish", the status is auto-promoted to
+	 *     "future"; otherwise the caller's status is preserved.
+	 */
+	public static function resolve_schedule( $raw_date, $status ) {
+		if ( empty( $raw_date ) ) {
+			return null;
+		}
+
+		$site_tz = wp_timezone();
+		try {
+			// If the input has no timezone marker, interpret it as site-local time.
+			if ( preg_match( '/(Z|[+\-]\d{2}:?\d{2})$/', $raw_date ) ) {
+				$dt = new DateTime( $raw_date );
+			} else {
+				$dt = new DateTime( $raw_date, $site_tz );
+			}
+		} catch ( Exception $e ) {
+			return new WP_Error(
+				'wmc_invalid_date',
+				'Invalid "date" value. Use "YYYY-MM-DD HH:MM:SS" or ISO 8601.'
+			);
+		}
+
+		$local = clone $dt;
+		$local->setTimezone( $site_tz );
+		$gmt = clone $dt;
+		$gmt->setTimezone( new DateTimeZone( 'UTC' ) );
+
+		$is_future    = $dt->getTimestamp() > time();
+		$final_status = $status;
+		if ( $is_future && ( $status === 'publish' || $status === 'future' ) ) {
+			$final_status = 'future';
+		}
+
+		return array(
+			'post_status'   => $final_status,
+			'post_date'     => $local->format( 'Y-m-d H:i:s' ),
+			'post_date_gmt' => $gmt->format( 'Y-m-d H:i:s' ),
+		);
+	}
+
+	/**
 	 * Register all abilities
 	 */
 	public static function register_all_abilities() {
@@ -144,7 +196,7 @@ class WMC_Abilities {
 			'wmc/create-post',
 			array(
 				'label'       => 'Create Post',
-				'description' => 'Create a new blog post with title, content, status, categories, and tags',
+				'description' => 'Create a new blog post with title, content, status, categories, tags, and optional scheduled date',
 				'category'    => 'wp-content-manager',
 				'input_schema' => array(
 					'type'       => 'object',
@@ -163,8 +215,13 @@ class WMC_Abilities {
 						),
 						'status'     => array(
 							'type'        => 'string',
-							'description' => 'Post status (publish, draft, pending)',
+							'description' => 'Post status: publish, draft, pending, or future (scheduled). If a future-dated "date" is passed with status "publish", it is auto-converted to "future".',
 							'default'     => 'draft',
+							'enum'        => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+						),
+						'date'       => array(
+							'type'        => 'string',
+							'description' => 'Scheduled publish date in site timezone. Accepts "YYYY-MM-DD HH:MM:SS" or ISO 8601 (e.g. "2026-06-01T10:00:00"). When set to a future date, the post is scheduled.',
 						),
 						'categories' => array(
 							'type'        => 'array',
@@ -199,7 +256,7 @@ class WMC_Abilities {
 			'wmc/update-post',
 			array(
 				'label'       => 'Update Post',
-				'description' => 'Update an existing blog post',
+				'description' => 'Update an existing blog post, including rescheduling via the optional "date" field',
 				'category'    => 'wp-content-manager',
 				'input_schema' => array(
 					'type'       => 'object',
@@ -218,7 +275,12 @@ class WMC_Abilities {
 						),
 						'status'     => array(
 							'type'        => 'string',
-							'description' => 'New post status',
+							'description' => 'New post status (publish, draft, pending, future, private)',
+							'enum'        => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+						),
+						'date'       => array(
+							'type'        => 'string',
+							'description' => 'New publish date. "YYYY-MM-DD HH:MM:SS" or ISO 8601. A future date with status "publish" is auto-promoted to "future" (scheduled).',
 						),
 						'categories' => array(
 							'type'        => 'array',
@@ -324,7 +386,7 @@ class WMC_Abilities {
 			'wmc/create-page',
 			array(
 				'label'       => 'Create Page',
-				'description' => 'Create a new WordPress page',
+				'description' => 'Create a new WordPress page, optionally scheduled via "date"',
 				'category'    => 'wp-content-manager',
 				'input_schema' => array(
 					'type'       => 'object',
@@ -339,8 +401,13 @@ class WMC_Abilities {
 						),
 						'status'  => array(
 							'type'        => 'string',
-							'description' => 'Page status (publish, draft)',
+							'description' => 'Page status (publish, draft, pending, future, private)',
 							'default'     => 'draft',
+							'enum'        => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+						),
+						'date'    => array(
+							'type'        => 'string',
+							'description' => 'Scheduled publish date. "YYYY-MM-DD HH:MM:SS" or ISO 8601. Future-dated "publish" becomes "future" (scheduled).',
 						),
 					),
 					'required'   => array( 'title' ),
@@ -364,7 +431,7 @@ class WMC_Abilities {
 			'wmc/update-page',
 			array(
 				'label'       => 'Update Page',
-				'description' => 'Update an existing WordPress page',
+				'description' => 'Update an existing WordPress page, including rescheduling via "date"',
 				'category'    => 'wp-content-manager',
 				'input_schema' => array(
 					'type'       => 'object',
@@ -372,7 +439,14 @@ class WMC_Abilities {
 						'id'      => array( 'type' => 'integer' ),
 						'title'   => array( 'type' => 'string' ),
 						'content' => array( 'type' => 'string' ),
-						'status'  => array( 'type' => 'string' ),
+						'status'  => array(
+							'type' => 'string',
+							'enum' => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+						),
+						'date'    => array(
+							'type'        => 'string',
+							'description' => 'New publish date. "YYYY-MM-DD HH:MM:SS" or ISO 8601. Future-dated "publish" becomes "future" (scheduled).',
+						),
 					),
 					'required'   => array( 'id' ),
 				),
@@ -1086,7 +1160,7 @@ class WMC_Abilities {
 		// DUPLICATE PREVENTION: Check if post with same title already exists
 		$existing = get_posts( array(
 			'post_type'      => 'post',
-			'post_status'    => array( 'publish', 'draft', 'pending' ),
+			'post_status'    => array( 'publish', 'draft', 'pending', 'future' ),
 			'title'          => $input['title'],
 			'posts_per_page' => 1,
 		) );
@@ -1100,15 +1174,33 @@ class WMC_Abilities {
 			);
 		}
 
+		$status = $input['status'] ?? 'draft';
+
 		$post_data = array(
 			'post_title'   => $input['title'],
 			'post_content' => $input['content'] ?? '',
 			'post_excerpt' => $input['excerpt'] ?? '',
-			'post_status'  => $input['status'] ?? 'draft',
+			'post_status'  => $status,
 			'post_type'    => 'post',
 		);
 
-		$post_id = wp_insert_post( $post_data );
+		// Handle scheduled date
+		$schedule = self::resolve_schedule( $input['date'] ?? null, $status );
+		if ( is_wp_error( $schedule ) ) {
+			return array(
+				'success' => false,
+				'message' => $schedule->get_error_message(),
+			);
+		}
+		if ( $schedule ) {
+			$post_data['post_status']   = $schedule['post_status'];
+			$post_data['post_date']     = $schedule['post_date'];
+			$post_data['post_date_gmt'] = $schedule['post_date_gmt'];
+			// edit_date forces WP to honor our date instead of overwriting with "now"
+			$post_data['edit_date']     = true;
+		}
+
+		$post_id = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $post_id ) ) {
 			return array(
@@ -1127,12 +1219,16 @@ class WMC_Abilities {
 			wp_set_post_tags( $post_id, $input['tags'] );
 		}
 
+		$final_post = get_post( $post_id );
+
 		return array(
-			'id'      => $post_id,
-			'title'   => $input['title'],
-			'url'     => get_permalink( $post_id ),
-			'status'  => $input['status'] ?? 'draft',
-			'success' => true,
+			'id'        => $post_id,
+			'title'     => $input['title'],
+			'url'       => get_permalink( $post_id ),
+			'status'    => $final_post ? $final_post->post_status : ( $post_data['post_status'] ),
+			'date'      => $final_post ? $final_post->post_date : null,
+			'scheduled' => $final_post && $final_post->post_status === 'future',
+			'success'   => true,
 		);
 	}
 
@@ -1161,7 +1257,27 @@ class WMC_Abilities {
 			$post_data['post_status'] = $input['status'];
 		}
 
-		$result = wp_update_post( $post_data );
+		// Handle scheduled date update
+		if ( isset( $input['date'] ) ) {
+			$current_status = $input['status']
+				?? ( get_post_status( $input['id'] ) ?: 'publish' );
+			$schedule = self::resolve_schedule( $input['date'], $current_status );
+			if ( is_wp_error( $schedule ) ) {
+				return array(
+					'id'      => $input['id'],
+					'success' => false,
+					'message' => $schedule->get_error_message(),
+				);
+			}
+			if ( $schedule ) {
+				$post_data['post_status']   = $schedule['post_status'];
+				$post_data['post_date']     = $schedule['post_date'];
+				$post_data['post_date_gmt'] = $schedule['post_date_gmt'];
+				$post_data['edit_date']     = true;
+			}
+		}
+
+		$result = wp_update_post( $post_data, true );
 
 		if ( is_wp_error( $result ) ) {
 			return array(
@@ -1176,10 +1292,15 @@ class WMC_Abilities {
 			wp_set_post_categories( $input['id'], $input['categories'] );
 		}
 
+		$final_post = get_post( $input['id'] );
+
 		return array(
-			'id'      => $input['id'],
-			'success' => true,
-			'message' => 'Post updated successfully',
+			'id'        => $input['id'],
+			'success'   => true,
+			'message'   => 'Post updated successfully',
+			'status'    => $final_post ? $final_post->post_status : null,
+			'date'      => $final_post ? $final_post->post_date : null,
+			'scheduled' => $final_post && $final_post->post_status === 'future',
 		);
 	}
 
@@ -1252,7 +1373,7 @@ class WMC_Abilities {
 		// DUPLICATE PREVENTION: Check if page with same title already exists
 		$existing = get_posts( array(
 			'post_type'      => 'page',
-			'post_status'    => array( 'publish', 'draft', 'pending' ),
+			'post_status'    => array( 'publish', 'draft', 'pending', 'future' ),
 			'title'          => $input['title'],
 			'posts_per_page' => 1,
 		) );
@@ -1266,14 +1387,31 @@ class WMC_Abilities {
 			);
 		}
 
+		$status = $input['status'] ?? 'draft';
+
 		$page_data = array(
 			'post_title'   => $input['title'],
 			'post_content' => $input['content'] ?? '',
-			'post_status'  => $input['status'] ?? 'draft',
+			'post_status'  => $status,
 			'post_type'    => 'page',
 		);
 
-		$page_id = wp_insert_post( $page_data );
+		// Handle scheduled date
+		$schedule = self::resolve_schedule( $input['date'] ?? null, $status );
+		if ( is_wp_error( $schedule ) ) {
+			return array(
+				'success' => false,
+				'message' => $schedule->get_error_message(),
+			);
+		}
+		if ( $schedule ) {
+			$page_data['post_status']   = $schedule['post_status'];
+			$page_data['post_date']     = $schedule['post_date'];
+			$page_data['post_date_gmt'] = $schedule['post_date_gmt'];
+			$page_data['edit_date']     = true;
+		}
+
+		$page_id = wp_insert_post( $page_data, true );
 
 		if ( is_wp_error( $page_id ) ) {
 			return array(
@@ -1282,11 +1420,16 @@ class WMC_Abilities {
 			);
 		}
 
+		$final_page = get_post( $page_id );
+
 		return array(
-			'id'      => $page_id,
-			'title'   => $input['title'],
-			'url'     => get_permalink( $page_id ),
-			'success' => true,
+			'id'        => $page_id,
+			'title'     => $input['title'],
+			'url'       => get_permalink( $page_id ),
+			'status'    => $final_page ? $final_page->post_status : $page_data['post_status'],
+			'date'      => $final_page ? $final_page->post_date : null,
+			'scheduled' => $final_page && $final_page->post_status === 'future',
+			'success'   => true,
 		);
 	}
 
@@ -1315,7 +1458,27 @@ class WMC_Abilities {
 			$page_data['post_status'] = $input['status'];
 		}
 
-		$result = wp_update_post( $page_data );
+		// Handle scheduled date update
+		if ( isset( $input['date'] ) ) {
+			$current_status = $input['status']
+				?? ( get_post_status( $input['id'] ) ?: 'publish' );
+			$schedule = self::resolve_schedule( $input['date'], $current_status );
+			if ( is_wp_error( $schedule ) ) {
+				return array(
+					'id'      => $input['id'],
+					'success' => false,
+					'message' => $schedule->get_error_message(),
+				);
+			}
+			if ( $schedule ) {
+				$page_data['post_status']   = $schedule['post_status'];
+				$page_data['post_date']     = $schedule['post_date'];
+				$page_data['post_date_gmt'] = $schedule['post_date_gmt'];
+				$page_data['edit_date']     = true;
+			}
+		}
+
+		$result = wp_update_post( $page_data, true );
 
 		if ( is_wp_error( $result ) ) {
 			return array(
@@ -1325,9 +1488,14 @@ class WMC_Abilities {
 			);
 		}
 
+		$final_page = get_post( $input['id'] );
+
 		return array(
-			'id'      => $input['id'],
-			'success' => true,
+			'id'        => $input['id'],
+			'success'   => true,
+			'status'    => $final_page ? $final_page->post_status : null,
+			'date'      => $final_page ? $final_page->post_date : null,
+			'scheduled' => $final_page && $final_page->post_status === 'future',
 		);
 	}
 
