@@ -104,12 +104,15 @@ class WMC_Abilities {
 	}
 
 	/**
-	 * Register all abilities
+	 * Register all abilities.
+	 *
+	 * Note: the ability CATEGORY ('wp-content-manager') is registered separately
+	 * in the main plugin file on `wp_abilities_api_categories_init`, which fires
+	 * before `wp_abilities_api_init`. Do NOT call self::register_category() from
+	 * here — calling `wp_register_ability_category()` outside its required hook
+	 * triggers `_doing_it_wrong` and returns null.
 	 */
 	public static function register_all_abilities() {
-		// Register ability category first
-		self::register_category();
-
 		// Register all abilities
 		self::register_post_abilities();
 		self::register_page_abilities();

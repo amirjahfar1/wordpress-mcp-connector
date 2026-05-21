@@ -3,7 +3,7 @@
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://github.com/essentialshoodie
  * Description: Exposes full WordPress CRUD operations via Abilities API for MCP integration. Manage posts, pages, categories, tags, media, comments, users, settings, menus, widgets, and themes.
- * Version: 2.2.2
+ * Version: 2.2.3
  * Author: WordPress MCP Team
  * License: GPL-2.0-or-later
  * Text Domain: wordpress-mcp-connector
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'WMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WMC_VERSION', '2.2.2' );
+define( 'WMC_VERSION', '2.2.3' );
 
 /**
  * Load the abilities and settings files
@@ -119,42 +119,42 @@ function wmc_register_seo_meta_fields() {
 add_action( 'rest_api_init', 'wmc_register_seo_meta_fields' );
 
 /**
- * Idempotent abilities-registration entry point.
+ * Register the plugin's ability CATEGORY.
  *
- * Calls WMC_Abilities::register_all_abilities() at most once per request, and
- * only when the Abilities API is actually available. We hang this function off
- * three hooks (see wmc_init below) because the Abilities API has moved hook
- * names between releases: pre-core Automattic plugin used `wp_abilities_api_init`,
- * the public docs still use `wp_abilities_api_init`, but some WP 6.9 builds fire
- * `abilities_api_init` instead. Whichever fires first wins; the guard prevents
- * double-registration.
+ * In WP 6.9+ this MUST run on `wp_abilities_api_categories_init` — the core
+ * function `wp_register_ability_category()` checks `doing_action()` and
+ * returns null with a `_doing_it_wrong` notice if called from any other hook.
+ * The categories hook fires before `wp_abilities_api_init`, so the category
+ * exists by the time abilities reference it.
  */
-function wmc_register_abilities_once() {
-	static $done = false;
-	if ( $done ) {
-		return;
+function wmc_register_category() {
+	if ( function_exists( 'wp_register_ability_category' ) ) {
+		wp_register_ability_category(
+			'wp-content-manager',
+			array(
+				'label'       => 'WordPress Content Manager',
+				'description' => 'Abilities for managing all WordPress content via MCP.',
+			)
+		);
 	}
-	if ( ! function_exists( 'wp_register_ability' ) ) {
-		// Abilities API not loaded yet on this hook — let a later hook try.
-		return;
-	}
-	$done = true;
-	WMC_Abilities::register_all_abilities();
 }
+add_action( 'wp_abilities_api_categories_init', 'wmc_register_category' );
 
 /**
- * Initialize the plugin
+ * Register all of the plugin's abilities.
+ *
+ * In WP 6.9+ this MUST run on `wp_abilities_api_init` — `wp_register_ability()`
+ * checks `doing_action()` and silently rejects (returns null + _doing_it_wrong)
+ * if called from any other context. Earlier versions of this plugin attached
+ * fallback callbacks on `init` and `abilities_api_init`, which actually made
+ * things worse by calling the registration function in invalid contexts.
  */
-function wmc_init() {
-	// Primary hook (per official Abilities API docs).
-	add_action( 'wp_abilities_api_init', 'wmc_register_abilities_once' );
-	// Alternate name observed in some WP 6.9+ core builds.
-	add_action( 'abilities_api_init', 'wmc_register_abilities_once' );
-	// Hard fallback — runs after both abilities-specific hooks would have fired.
-	// Idempotency guard above ensures we don't double-register.
-	add_action( 'init', 'wmc_register_abilities_once', 20 );
+function wmc_register_abilities() {
+	if ( class_exists( 'WMC_Abilities' ) ) {
+		WMC_Abilities::register_all_abilities();
+	}
 }
-add_action( 'plugins_loaded', 'wmc_init' );
+add_action( 'wp_abilities_api_init', 'wmc_register_abilities' );
 
 /**
  * Diagnostic REST endpoint — exposed at /wp-json/wmc/v1/diagnose. Lets us
@@ -193,25 +193,24 @@ function wmc_diagnose_callback() {
 	}
 
 	return array(
-		'plugin_version'                  => defined( 'WMC_VERSION' ) ? WMC_VERSION : '(undefined)',
-		'plugin_dir'                      => defined( 'WMC_PLUGIN_DIR' ) ? WMC_PLUGIN_DIR : '(undefined)',
-		'wp_version'                      => get_bloginfo( 'version' ),
-		'php_version'                     => PHP_VERSION,
-		'class_WMC_Abilities_loaded'      => class_exists( 'WMC_Abilities' ),
-		'class_WMC_Settings_loaded'       => class_exists( 'WMC_Settings' ),
-		'fn_wp_register_ability'          => function_exists( 'wp_register_ability' ),
-		'fn_wp_register_ability_category' => function_exists( 'wp_register_ability_category' ),
-		'fn_wp_get_abilities'             => function_exists( 'wp_get_abilities' ),
-		'did_wp_abilities_api_init'       => (int) did_action( 'wp_abilities_api_init' ),
-		'did_abilities_api_init'          => (int) did_action( 'abilities_api_init' ),
-		'did_init'                        => (int) did_action( 'init' ),
-		'wmc_abilities_count'             => count( $wmc_abilities ),
-		'wmc_abilities'                   => $wmc_abilities,
-		'register_callbacks_attached'     => array(
-			'wp_abilities_api_init' => isset( $wp_filter['wp_abilities_api_init'] ),
-			'abilities_api_init'    => isset( $wp_filter['abilities_api_init'] ),
-			'init'                  => isset( $wp_filter['init'] ),
-		),
+		'plugin_version'                          => defined( 'WMC_VERSION' ) ? WMC_VERSION : '(undefined)',
+		'plugin_dir'                              => defined( 'WMC_PLUGIN_DIR' ) ? WMC_PLUGIN_DIR : '(undefined)',
+		'wp_version'                              => get_bloginfo( 'version' ),
+		'php_version'                             => PHP_VERSION,
+		'class_WMC_Abilities_loaded'              => class_exists( 'WMC_Abilities' ),
+		'class_WMC_Settings_loaded'               => class_exists( 'WMC_Settings' ),
+		'fn_wp_register_ability'                  => function_exists( 'wp_register_ability' ),
+		'fn_wp_register_ability_category'         => function_exists( 'wp_register_ability_category' ),
+		'fn_wp_has_ability_category'              => function_exists( 'wp_has_ability_category' ),
+		'fn_wp_get_abilities'                     => function_exists( 'wp_get_abilities' ),
+		'did_wp_abilities_api_categories_init'    => (int) did_action( 'wp_abilities_api_categories_init' ),
+		'did_wp_abilities_api_init'               => (int) did_action( 'wp_abilities_api_init' ),
+		'did_init'                                => (int) did_action( 'init' ),
+		'wmc_category_registered'                 => function_exists( 'wp_has_ability_category' )
+			? wp_has_ability_category( 'wp-content-manager' )
+			: 'unknown',
+		'wmc_abilities_count'                     => count( $wmc_abilities ),
+		'wmc_abilities'                           => $wmc_abilities,
 	);
 }
 
