@@ -34,6 +34,24 @@ class WMC_Abilities {
 	}
 
 	/**
+	 * Wrapper around wp_register_ability() that defaults meta.show_in_rest=true
+	 * so the ability is reachable via /wp-json/wp-abilities/v1/abilities/... .
+	 * Pass meta.show_in_rest=false explicitly to opt out.
+	 */
+	public static function wmc_register( $name, $args ) {
+		if ( ! function_exists( 'wp_register_ability' ) ) {
+			return null;
+		}
+		if ( ! isset( $args['meta'] ) || ! is_array( $args['meta'] ) ) {
+			$args['meta'] = array();
+		}
+		if ( ! array_key_exists( 'show_in_rest', $args['meta'] ) ) {
+			$args['meta']['show_in_rest'] = true;
+		}
+		return wp_register_ability( $name, $args );
+	}
+
+	/**
 	 * Resolve a scheduled-publish date for a post/page.
 	 *
 	 * Accepts "YYYY-MM-DD HH:MM:SS" (WP local format) or ISO 8601 (e.g. "2026-06-01T10:00:00",
@@ -131,7 +149,7 @@ class WMC_Abilities {
 	 */
 	private static function register_post_abilities() {
 		// Get Posts
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-posts',
 			array(
 				'label'       => 'Get Posts',
@@ -187,12 +205,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => true,
-				'callback'            => array( self::class, 'get_posts' ),
+				'execute_callback'    => array( self::class, 'get_posts' ),
 			)
 		);
 
 		// Create Post
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/create-post',
 			array(
 				'label'       => 'Create Post',
@@ -247,12 +265,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'publish_posts' ),
-				'callback'            => array( self::class, 'create_post' ),
+				'execute_callback'    => array( self::class, 'create_post' ),
 			)
 		);
 
 		// Update Post
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-post',
 			array(
 				'label'       => 'Update Post',
@@ -299,12 +317,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'edit_posts' ),
-				'callback'            => array( self::class, 'update_post' ),
+				'execute_callback'    => array( self::class, 'update_post' ),
 			)
 		);
 
 		// Delete Post
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-post',
 			array(
 				'label'       => 'Delete Post',
@@ -329,7 +347,7 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'delete_posts' ),
-				'callback'            => array( self::class, 'delete_post' ),
+				'execute_callback'    => array( self::class, 'delete_post' ),
 			)
 		);
 	}
@@ -343,7 +361,7 @@ class WMC_Abilities {
 	 */
 	private static function register_page_abilities() {
 		// Get Pages
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-pages',
 			array(
 				'label'       => 'Get Pages',
@@ -377,12 +395,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => true,
-				'callback'            => array( self::class, 'get_pages' ),
+				'execute_callback'    => array( self::class, 'get_pages' ),
 			)
 		);
 
 		// Create Page
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/create-page',
 			array(
 				'label'       => 'Create Page',
@@ -422,12 +440,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'publish_pages' ),
-				'callback'            => array( self::class, 'create_page' ),
+				'execute_callback'    => array( self::class, 'create_page' ),
 			)
 		);
 
 		// Update Page
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-page',
 			array(
 				'label'       => 'Update Page',
@@ -458,12 +476,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'edit_pages' ),
-				'callback'            => array( self::class, 'update_page' ),
+				'execute_callback'    => array( self::class, 'update_page' ),
 			)
 		);
 
 		// Delete Page
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-page',
 			array(
 				'label'       => 'Delete Page',
@@ -487,7 +505,7 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'delete_pages' ),
-				'callback'            => array( self::class, 'delete_page' ),
+				'execute_callback'    => array( self::class, 'delete_page' ),
 			)
 		);
 	}
@@ -501,7 +519,7 @@ class WMC_Abilities {
 	 */
 	private static function register_category_abilities() {
 		// Get Categories
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-categories',
 			array(
 				'label'       => 'Get Categories',
@@ -525,12 +543,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => true,
-				'callback'            => array( self::class, 'get_categories' ),
+				'execute_callback'    => array( self::class, 'get_categories' ),
 			)
 		);
 
 		// Create Category
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/create-category',
 			array(
 				'label'       => 'Create Category',
@@ -553,12 +571,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'manage_categories' ),
-				'callback'            => array( self::class, 'create_category' ),
+				'execute_callback'    => array( self::class, 'create_category' ),
 			)
 		);
 
 		// Update Category
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-category',
 			array(
 				'label'       => 'Update Category',
@@ -581,12 +599,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'manage_categories' ),
-				'callback'            => array( self::class, 'update_category' ),
+				'execute_callback'    => array( self::class, 'update_category' ),
 			)
 		);
 
 		// Delete Category
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-category',
 			array(
 				'label'       => 'Delete Category',
@@ -606,7 +624,7 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'delete_categories' ),
-				'callback'            => array( self::class, 'delete_category' ),
+				'execute_callback'    => array( self::class, 'delete_category' ),
 			)
 		);
 	}
@@ -620,7 +638,7 @@ class WMC_Abilities {
 	 */
 	private static function register_tag_abilities() {
 		// Get Tags
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-tags',
 			array(
 				'label'       => 'Get Tags',
@@ -643,12 +661,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => true,
-				'callback'            => array( self::class, 'get_tags' ),
+				'execute_callback'    => array( self::class, 'get_tags' ),
 			)
 		);
 
 		// Create Tag
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/create-tag',
 			array(
 				'label'       => 'Create Tag',
@@ -671,12 +689,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'manage_post_tags' ),
-				'callback'            => array( self::class, 'create_tag' ),
+				'execute_callback'    => array( self::class, 'create_tag' ),
 			)
 		);
 
 		// Update Tag
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-tag',
 			array(
 				'label'       => 'Update Tag',
@@ -699,12 +717,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'manage_post_tags' ),
-				'callback'            => array( self::class, 'update_tag' ),
+				'execute_callback'    => array( self::class, 'update_tag' ),
 			)
 		);
 
 		// Delete Tag
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-tag',
 			array(
 				'label'       => 'Delete Tag',
@@ -724,7 +742,7 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'delete_post_tags' ),
-				'callback'            => array( self::class, 'delete_tag' ),
+				'execute_callback'    => array( self::class, 'delete_tag' ),
 			)
 		);
 	}
@@ -738,7 +756,7 @@ class WMC_Abilities {
 	 */
 	private static function register_media_abilities() {
 		// Get Media
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-media',
 			array(
 				'label'       => 'Get Media',
@@ -761,12 +779,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'upload_files' ),
-				'callback'            => array( self::class, 'get_media' ),
+				'execute_callback'    => array( self::class, 'get_media' ),
 			)
 		);
 
 		// Create Media (Upload)
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/create-media',
 			array(
 				'label'       => 'Create Media',
@@ -798,12 +816,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'upload_files' ),
-				'callback'            => array( self::class, 'create_media' ),
+				'execute_callback'    => array( self::class, 'create_media' ),
 			)
 		);
 
 		// Update Media
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-media',
 			array(
 				'label'       => 'Update Media',
@@ -827,12 +845,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'upload_files' ),
-				'callback'            => array( self::class, 'update_media' ),
+				'execute_callback'    => array( self::class, 'update_media' ),
 			)
 		);
 
 		// Delete Media
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-media',
 			array(
 				'label'       => 'Delete Media',
@@ -856,7 +874,7 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'delete_posts' ),
-				'callback'            => array( self::class, 'delete_media' ),
+				'execute_callback'    => array( self::class, 'delete_media' ),
 			)
 		);
 	}
@@ -870,7 +888,7 @@ class WMC_Abilities {
 	 */
 	private static function register_comment_abilities() {
 		// Get Comments
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-comments',
 			array(
 				'label'       => 'Get Comments',
@@ -897,12 +915,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'moderate_comments' ),
-				'callback'            => array( self::class, 'get_comments' ),
+				'execute_callback'    => array( self::class, 'get_comments' ),
 			)
 		);
 
 		// Moderate Comment
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/moderate-comment',
 			array(
 				'label'       => 'Moderate Comment',
@@ -926,12 +944,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'moderate_comments' ),
-				'callback'            => array( self::class, 'moderate_comment' ),
+				'execute_callback'    => array( self::class, 'moderate_comment' ),
 			)
 		);
 
 		// Delete Comment
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-comment',
 			array(
 				'label'       => 'Delete Comment',
@@ -951,7 +969,7 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'moderate_comments' ),
-				'callback'            => array( self::class, 'delete_comment' ),
+				'execute_callback'    => array( self::class, 'delete_comment' ),
 			)
 		);
 	}
@@ -965,7 +983,7 @@ class WMC_Abilities {
 	 */
 	private static function register_user_abilities() {
 		// Get Users
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-users',
 			array(
 				'label'       => 'Get Users',
@@ -992,12 +1010,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'list_users' ),
-				'callback'            => array( self::class, 'get_users' ),
+				'execute_callback'    => array( self::class, 'get_users' ),
 			)
 		);
 
 		// Create User
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/create-user',
 			array(
 				'label'       => 'Create User',
@@ -1038,12 +1056,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'create_users' ),
-				'callback'            => array( self::class, 'create_user' ),
+				'execute_callback'    => array( self::class, 'create_user' ),
 			)
 		);
 
 		// Update User
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-user',
 			array(
 				'label'       => 'Update User',
@@ -1071,12 +1089,12 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'edit_users' ),
-				'callback'            => array( self::class, 'update_user' ),
+				'execute_callback'    => array( self::class, 'update_user' ),
 			)
 		);
 
 		// Delete User
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-user',
 			array(
 				'label'       => 'Delete User',
@@ -1104,7 +1122,7 @@ class WMC_Abilities {
 					),
 				),
 				'permission_callback' => fn() => current_user_can( 'delete_users' ),
-				'callback'            => array( self::class, 'delete_user' ),
+				'execute_callback'    => array( self::class, 'delete_user' ),
 			)
 		);
 	}
@@ -2131,7 +2149,7 @@ class WMC_Abilities {
 	 */
 
 	private static function register_settings_abilities() {
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-options',
 			array(
 				'label'       => 'Get Settings',
@@ -2150,12 +2168,12 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'get_options' ),
+				'execute_callback' => array( self::class, 'get_options' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
 
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-option',
 			array(
 				'label'       => 'Update Setting',
@@ -2177,7 +2195,7 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'update_option' ),
+				'execute_callback' => array( self::class, 'update_option' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
@@ -2259,7 +2277,7 @@ class WMC_Abilities {
 	 */
 
 	private static function register_menu_abilities() {
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-menus',
 			array(
 				'label'       => 'Get Menus',
@@ -2268,12 +2286,12 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'get_menus' ),
+				'execute_callback' => array( self::class, 'get_menus' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
 
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/create-menu',
 			array(
 				'label'       => 'Create Menu',
@@ -2292,12 +2310,12 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'create_menu' ),
+				'execute_callback' => array( self::class, 'create_menu' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
 
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/delete-menu',
 			array(
 				'label'       => 'Delete Menu',
@@ -2316,7 +2334,7 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'delete_menu' ),
+				'execute_callback' => array( self::class, 'delete_menu' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
@@ -2399,7 +2417,7 @@ class WMC_Abilities {
 	 */
 
 	private static function register_widget_abilities() {
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-sidebars',
 			array(
 				'label'       => 'Get Widget Areas',
@@ -2408,12 +2426,12 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'get_sidebars' ),
+				'execute_callback' => array( self::class, 'get_sidebars' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
 
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-widget-option',
 			array(
 				'label'       => 'Update Widget Settings',
@@ -2439,7 +2457,7 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'update_widget_option' ),
+				'execute_callback' => array( self::class, 'update_widget_option' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
@@ -2493,7 +2511,7 @@ class WMC_Abilities {
 	 */
 
 	private static function register_theme_abilities() {
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-themes',
 			array(
 				'label'       => 'Get Themes',
@@ -2502,12 +2520,12 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'get_themes' ),
+				'execute_callback' => array( self::class, 'get_themes' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
 
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/activate-theme',
 			array(
 				'label'       => 'Activate Theme',
@@ -2526,12 +2544,12 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'activate_theme' ),
+				'execute_callback' => array( self::class, 'activate_theme' ),
 				'permission_callback' => fn() => current_user_can( 'switch_themes' ),
 			)
 		);
 
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-theme-mods',
 			array(
 				'label'       => 'Get Theme Settings',
@@ -2540,12 +2558,12 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'get_theme_mods' ),
+				'execute_callback' => array( self::class, 'get_theme_mods' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
 
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-theme-mod',
 			array(
 				'label'       => 'Update Theme Setting',
@@ -2567,7 +2585,7 @@ class WMC_Abilities {
 				'output_schema' => array(
 					'type' => 'object',
 				),
-				'callback'         => array( self::class, 'update_theme_mod' ),
+				'execute_callback' => array( self::class, 'update_theme_mod' ),
 				'permission_callback' => fn() => current_user_can( 'manage_options' ),
 			)
 		);
@@ -2665,7 +2683,7 @@ class WMC_Abilities {
 
 	private static function register_seo_abilities() {
 		// Get Post SEO Meta
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-post-seo-meta',
 			array(
 				'label'       => 'Get Post SEO Meta',
@@ -2685,12 +2703,12 @@ class WMC_Abilities {
 					'type' => 'object',
 				),
 				'permission_callback' => fn() => current_user_can( 'edit_posts' ),
-				'callback'            => array( self::class, 'get_post_seo_meta' ),
+				'execute_callback'    => array( self::class, 'get_post_seo_meta' ),
 			)
 		);
 
 		// Update Post SEO Meta
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-post-seo-meta',
 			array(
 				'label'       => 'Update Post SEO Meta',
@@ -2722,12 +2740,12 @@ class WMC_Abilities {
 					'type' => 'object',
 				),
 				'permission_callback' => fn() => current_user_can( 'edit_posts' ),
-				'callback'            => array( self::class, 'update_post_seo_meta' ),
+				'execute_callback'    => array( self::class, 'update_post_seo_meta' ),
 			)
 		);
 
 		// Get Page SEO Meta
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/get-page-seo-meta',
 			array(
 				'label'       => 'Get Page SEO Meta',
@@ -2747,12 +2765,12 @@ class WMC_Abilities {
 					'type' => 'object',
 				),
 				'permission_callback' => fn() => current_user_can( 'edit_pages' ),
-				'callback'            => array( self::class, 'get_page_seo_meta' ),
+				'execute_callback'    => array( self::class, 'get_page_seo_meta' ),
 			)
 		);
 
 		// Update Page SEO Meta
-		wp_register_ability(
+		self::wmc_register(
 			'wmc/update-page-seo-meta',
 			array(
 				'label'       => 'Update Page SEO Meta',
@@ -2784,7 +2802,7 @@ class WMC_Abilities {
 					'type' => 'object',
 				),
 				'permission_callback' => fn() => current_user_can( 'edit_pages' ),
-				'callback'            => array( self::class, 'update_page_seo_meta' ),
+				'execute_callback'    => array( self::class, 'update_page_seo_meta' ),
 			)
 		);
 	}
