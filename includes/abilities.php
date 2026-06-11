@@ -884,6 +884,184 @@ class WMC_Abilities {
 				'execute_callback'    => array( self::class, 'delete_media' ),
 			)
 		);
+
+		// Get Media Details
+		self::wmc_register(
+			'wmc/get-media-details',
+			array(
+				'label'       => 'Get Media Details',
+				'description' => 'Get full metadata of a single media item (alt text, caption, description, dimensions, file size, attached post)',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'Media attachment ID',
+						),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'permission_callback' => fn() => current_user_can( 'upload_files' ),
+				'execute_callback'    => array( self::class, 'get_media_details' ),
+			)
+		);
+
+		// Get Media Without Alt Text
+		self::wmc_register(
+			'wmc/get-media-without-alt',
+			array(
+				'label'       => 'Get Media Without Alt Text',
+				'description' => 'Find all images missing alt text — useful for SEO audits and bulk fixing',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'per_page' => array(
+							'type'        => 'integer',
+							'description' => 'Results per page (default: 50, max: 200)',
+							'default'     => 50,
+							'minimum'     => 1,
+							'maximum'     => 200,
+						),
+						'page' => array(
+							'type'    => 'integer',
+							'default' => 1,
+						),
+						'mime_type' => array(
+							'type'        => 'string',
+							'description' => 'Filter by MIME type prefix: image, image/jpeg, image/png, image/webp (default: image)',
+							'default'     => 'image',
+						),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'permission_callback' => fn() => current_user_can( 'upload_files' ),
+				'execute_callback'    => array( self::class, 'get_media_without_alt' ),
+			)
+		);
+
+		// Search Media (Advanced)
+		self::wmc_register(
+			'wmc/search-media',
+			array(
+				'label'       => 'Search Media',
+				'description' => 'Advanced media search and filter by title, alt text, description, MIME type, date range, or attached/unattached status',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'search'     => array(
+							'type'        => 'string',
+							'description' => 'Search in title, alt text, description, caption',
+						),
+						'mime_type'  => array(
+							'type'        => 'string',
+							'description' => 'Filter by MIME type: image, image/jpeg, image/png, image/webp, video, audio, application/pdf',
+						),
+						'attached'   => array(
+							'type'        => 'string',
+							'description' => 'Filter by attachment status: all, attached, unattached',
+							'enum'        => array( 'all', 'attached', 'unattached' ),
+							'default'     => 'all',
+						),
+						'date_after' => array(
+							'type'        => 'string',
+							'description' => 'Uploaded after this date (YYYY-MM-DD)',
+						),
+						'date_before' => array(
+							'type'        => 'string',
+							'description' => 'Uploaded before this date (YYYY-MM-DD)',
+						),
+						'has_alt'    => array(
+							'type'        => 'string',
+							'description' => 'Filter by alt text presence: all, yes, no',
+							'enum'        => array( 'all', 'yes', 'no' ),
+							'default'     => 'all',
+						),
+						'per_page'   => array( 'type' => 'integer', 'default' => 50, 'minimum' => 1, 'maximum' => 200 ),
+						'page'       => array( 'type' => 'integer', 'default' => 1 ),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'permission_callback' => fn() => current_user_can( 'upload_files' ),
+				'execute_callback'    => array( self::class, 'search_media' ),
+			)
+		);
+
+		// Bulk Update Media
+		self::wmc_register(
+			'wmc/bulk-update-media',
+			array(
+				'label'       => 'Bulk Update Media',
+				'description' => 'Update alt text, title, description, and caption for multiple media items in one call',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'items' => array(
+							'type'        => 'array',
+							'description' => 'Array of media items to update',
+							'items'       => array(
+								'type'       => 'object',
+								'properties' => array(
+									'id'          => array(
+										'type'        => 'integer',
+										'description' => 'Media attachment ID (required)',
+									),
+									'alt_text'    => array(
+										'type'        => 'string',
+										'description' => 'Alt text for the image',
+									),
+									'title'       => array(
+										'type'        => 'string',
+										'description' => 'Media title',
+									),
+									'description' => array(
+										'type'        => 'string',
+										'description' => 'Media description (post_content)',
+									),
+									'caption'     => array(
+										'type'        => 'string',
+										'description' => 'Media caption (post_excerpt)',
+									),
+								),
+								'required' => array( 'id' ),
+							),
+						),
+					),
+					'required' => array( 'items' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'permission_callback' => fn() => current_user_can( 'upload_files' ),
+				'execute_callback'    => array( self::class, 'bulk_update_media' ),
+			)
+		);
+
+		// Bulk Delete Media
+		self::wmc_register(
+			'wmc/bulk-delete-media',
+			array(
+				'label'       => 'Bulk Delete Media',
+				'description' => 'Delete multiple media files in one call',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'ids' => array(
+							'type'        => 'array',
+							'description' => 'Array of media attachment IDs to delete',
+							'items'       => array( 'type' => 'integer' ),
+						),
+					),
+					'required' => array( 'ids' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'permission_callback' => fn() => current_user_can( 'delete_posts' ),
+				'execute_callback'    => array( self::class, 'bulk_delete_media' ),
+			)
+		);
 	}
 
 	/**
@@ -1915,6 +2093,303 @@ class WMC_Abilities {
 		return array(
 			'success' => true,
 			'message' => 'Media deleted successfully',
+		);
+	}
+
+	/**
+	 * Get Media Details callback
+	 */
+	public static function get_media_details( $input ) {
+		if ( ! self::is_enabled( 'media', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		$id   = (int) $input['id'];
+		$post = get_post( $id );
+
+		if ( ! $post || $post->post_type !== 'attachment' ) {
+			return array( 'success' => false, 'message' => 'Media not found' );
+		}
+
+		$meta      = wp_get_attachment_metadata( $id );
+		$file_path = get_attached_file( $id );
+		$file_size = $file_path && file_exists( $file_path ) ? filesize( $file_path ) : null;
+
+		return array(
+			'success'       => true,
+			'id'            => $id,
+			'title'         => $post->post_title,
+			'alt_text'      => get_post_meta( $id, '_wp_attachment_image_alt', true ),
+			'caption'       => $post->post_excerpt,
+			'description'   => $post->post_content,
+			'url'           => wp_get_attachment_url( $id ),
+			'mime_type'     => $post->post_mime_type,
+			'file_name'     => basename( get_attached_file( $id ) ),
+			'file_size'     => $file_size,
+			'file_size_kb'  => $file_size ? round( $file_size / 1024, 2 ) : null,
+			'width'         => $meta['width'] ?? null,
+			'height'        => $meta['height'] ?? null,
+			'date_uploaded' => $post->post_date,
+			'attached_to'   => array(
+				'post_id'    => $post->post_parent ?: null,
+				'post_title' => $post->post_parent ? get_the_title( $post->post_parent ) : null,
+				'post_url'   => $post->post_parent ? get_permalink( $post->post_parent ) : null,
+			),
+			'sizes'         => isset( $meta['sizes'] ) ? array_map( fn( $s ) => array(
+				'width'  => $s['width'],
+				'height' => $s['height'],
+				'file'   => $s['file'],
+			), $meta['sizes'] ) : array(),
+		);
+	}
+
+	/**
+	 * Get Media Without Alt Text callback
+	 */
+	public static function get_media_without_alt( $input ) {
+		if ( ! self::is_enabled( 'media', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		$per_page  = min( (int) ( $input['per_page'] ?? 50 ), 200 );
+		$page      = (int) ( $input['page'] ?? 1 );
+		$mime_type = $input['mime_type'] ?? 'image';
+
+		// Find attachments where _wp_attachment_image_alt is empty or missing
+		$args = array(
+			'post_type'      => 'attachment',
+			'post_status'    => 'inherit',
+			'posts_per_page' => $per_page,
+			'paged'          => $page,
+			'post_mime_type' => $mime_type,
+			'meta_query'     => array(
+				'relation' => 'OR',
+				array(
+					'key'     => '_wp_attachment_image_alt',
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => '_wp_attachment_image_alt',
+					'value'   => '',
+					'compare' => '=',
+				),
+			),
+		);
+
+		$query  = new WP_Query( $args );
+		$result = array();
+
+		foreach ( $query->posts as $post ) {
+			$result[] = array(
+				'id'        => $post->ID,
+				'title'     => $post->post_title,
+				'url'       => wp_get_attachment_url( $post->ID ),
+				'mime_type' => $post->post_mime_type,
+				'date'      => $post->post_date,
+				'attached_to' => $post->post_parent ? get_the_title( $post->post_parent ) : null,
+			);
+		}
+
+		return array(
+			'success'     => true,
+			'count'       => count( $result ),
+			'total'       => $query->found_posts,
+			'total_pages' => $query->max_num_pages,
+			'message'     => $query->found_posts . ' image(s) missing alt text',
+			'media'       => $result,
+		);
+	}
+
+	/**
+	 * Search Media (Advanced) callback
+	 */
+	public static function search_media( $input ) {
+		if ( ! self::is_enabled( 'media', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		$per_page = min( (int) ( $input['per_page'] ?? 50 ), 200 );
+		$page     = (int) ( $input['page'] ?? 1 );
+
+		$args = array(
+			'post_type'      => 'attachment',
+			'post_status'    => 'inherit',
+			'posts_per_page' => $per_page,
+			'paged'          => $page,
+		);
+
+		if ( ! empty( $input['search'] ) ) {
+			$args['s'] = sanitize_text_field( $input['search'] );
+		}
+
+		if ( ! empty( $input['mime_type'] ) ) {
+			$args['post_mime_type'] = $input['mime_type'];
+		}
+
+		// attached / unattached filter
+		$attached = $input['attached'] ?? 'all';
+		if ( $attached === 'attached' ) {
+			$args['post_parent__not_in'] = array( 0 );
+		} elseif ( $attached === 'unattached' ) {
+			$args['post_parent'] = 0;
+		}
+
+		// date range
+		$date_query = array();
+		if ( ! empty( $input['date_after'] ) ) {
+			$date_query['after'] = sanitize_text_field( $input['date_after'] );
+		}
+		if ( ! empty( $input['date_before'] ) ) {
+			$date_query['before'] = sanitize_text_field( $input['date_before'] );
+		}
+		if ( ! empty( $date_query ) ) {
+			$args['date_query'] = array( $date_query );
+		}
+
+		// has_alt filter
+		$has_alt = $input['has_alt'] ?? 'all';
+		if ( $has_alt === 'no' ) {
+			$args['meta_query'] = array(
+				'relation' => 'OR',
+				array( 'key' => '_wp_attachment_image_alt', 'compare' => 'NOT EXISTS' ),
+				array( 'key' => '_wp_attachment_image_alt', 'value' => '', 'compare' => '=' ),
+			);
+		} elseif ( $has_alt === 'yes' ) {
+			$args['meta_query'] = array(
+				array(
+					'key'     => '_wp_attachment_image_alt',
+					'value'   => '',
+					'compare' => '!=',
+				),
+			);
+		}
+
+		$query  = new WP_Query( $args );
+		$result = array();
+
+		foreach ( $query->posts as $post ) {
+			$alt = get_post_meta( $post->ID, '_wp_attachment_image_alt', true );
+			$result[] = array(
+				'id'          => $post->ID,
+				'title'       => $post->post_title,
+				'alt_text'    => $alt,
+				'caption'     => $post->post_excerpt,
+				'description' => $post->post_content,
+				'url'         => wp_get_attachment_url( $post->ID ),
+				'mime_type'   => $post->post_mime_type,
+				'date'        => $post->post_date,
+				'attached_to' => $post->post_parent ? array(
+					'id'    => $post->post_parent,
+					'title' => get_the_title( $post->post_parent ),
+				) : null,
+			);
+		}
+
+		return array(
+			'success'     => true,
+			'count'       => count( $result ),
+			'total'       => $query->found_posts,
+			'total_pages' => $query->max_num_pages,
+			'media'       => $result,
+		);
+	}
+
+	/**
+	 * Bulk Update Media callback
+	 */
+	public static function bulk_update_media( $input ) {
+		if ( ! self::is_enabled( 'media', 'write' ) ) {
+			return self::get_disabled_error( 'Update' );
+		}
+
+		$items    = $input['items'] ?? array();
+		$updated  = array();
+		$failed   = array();
+
+		foreach ( $items as $item ) {
+			$id = (int) ( $item['id'] ?? 0 );
+			if ( ! $id ) {
+				$failed[] = array( 'id' => $id, 'reason' => 'Missing ID' );
+				continue;
+			}
+
+			$post = get_post( $id );
+			if ( ! $post || $post->post_type !== 'attachment' ) {
+				$failed[] = array( 'id' => $id, 'reason' => 'Not found' );
+				continue;
+			}
+
+			$post_data = array( 'ID' => $id );
+			if ( isset( $item['title'] ) )       $post_data['post_title']   = sanitize_text_field( $item['title'] );
+			if ( isset( $item['description'] ) ) $post_data['post_content'] = wp_kses_post( $item['description'] );
+			if ( isset( $item['caption'] ) )     $post_data['post_excerpt'] = sanitize_text_field( $item['caption'] );
+
+			if ( count( $post_data ) > 1 ) {
+				$result = wp_update_post( $post_data, true );
+				if ( is_wp_error( $result ) ) {
+					$failed[] = array( 'id' => $id, 'reason' => $result->get_error_message() );
+					continue;
+				}
+			}
+
+			if ( isset( $item['alt_text'] ) ) {
+				update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( $item['alt_text'] ) );
+			}
+
+			$updated[] = array(
+				'id'          => $id,
+				'title'       => get_the_title( $id ),
+				'alt_text'    => get_post_meta( $id, '_wp_attachment_image_alt', true ),
+				'url'         => wp_get_attachment_url( $id ),
+			);
+		}
+
+		return array(
+			'success'       => true,
+			'updated_count' => count( $updated ),
+			'failed_count'  => count( $failed ),
+			'updated'       => $updated,
+			'failed'        => $failed,
+		);
+	}
+
+	/**
+	 * Bulk Delete Media callback
+	 */
+	public static function bulk_delete_media( $input ) {
+		if ( ! self::is_enabled( 'media', 'write' ) ) {
+			return self::get_disabled_error( 'Delete' );
+		}
+
+		$ids     = $input['ids'] ?? array();
+		$deleted = array();
+		$failed  = array();
+
+		foreach ( $ids as $id ) {
+			$id   = (int) $id;
+			$post = get_post( $id );
+
+			if ( ! $post || $post->post_type !== 'attachment' ) {
+				$failed[] = array( 'id' => $id, 'reason' => 'Not found' );
+				continue;
+			}
+
+			$title  = $post->post_title;
+			$result = wp_delete_attachment( $id, true );
+
+			if ( $result ) {
+				$deleted[] = array( 'id' => $id, 'title' => $title );
+			} else {
+				$failed[] = array( 'id' => $id, 'reason' => 'Delete failed' );
+			}
+		}
+
+		return array(
+			'success'       => true,
+			'deleted_count' => count( $deleted ),
+			'failed_count'  => count( $failed ),
+			'deleted'       => $deleted,
+			'failed'        => $failed,
 		);
 	}
 

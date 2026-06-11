@@ -2,6 +2,24 @@
 
 ---
 
+## v2.4.0 — 2026-06-12
+
+### Feature: Bulk & Advanced Media Management
+
+**5 new abilities added (total: 63):**
+
+| Ability | Description |
+|---|---|
+| `wmc/get-media-details` | Full metadata of one media item: alt, caption, description, dimensions, file size, attached post |
+| `wmc/get-media-without-alt` | Find all images missing alt text — paginated SEO audit tool |
+| `wmc/search-media` | Advanced filter: title/alt/desc search, MIME type, date range, attached/unattached, has-alt filter |
+| `wmc/bulk-update-media` | Update alt text, title, description, caption for multiple items in one API call |
+| `wmc/bulk-delete-media` | Delete multiple media items by ID array in one call |
+
+`bulk-update-media` and `bulk-delete-media` return per-item `updated`/`deleted` and `failed` arrays so the caller knows exactly what succeeded.
+
+---
+
 ## v2.3.0 — 2026-06-12
 
 ### Feature: Plugin Management, User Roles, WooCommerce & System Maintenance

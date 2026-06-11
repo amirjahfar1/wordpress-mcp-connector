@@ -2,7 +2,7 @@
 
 A WordPress plugin that exposes **58 abilities** across 16 categories through the [WordPress Abilities API](https://developer.wordpress.org/abilities-api/) for seamless MCP (Model Context Protocol) integration. Control every ability individually from the WordPress admin dashboard.
 
-**Current Version:** 2.3.0 | **Requires:** WordPress 6.9+ | **PHP:** 7.4+
+**Current Version:** 2.4.0 | **Requires:** WordPress 6.9+ | **PHP:** 7.4+
 
 ---
 
@@ -92,14 +92,39 @@ Response includes `"scheduled": true` and `"status": "future"` when post is queu
 
 ---
 
-### 🖼️ Media (4 abilities)
+### 🖼️ Media (9 abilities)
 
 | Ability | Description | Key Inputs |
 |---|---|---|
 | `wmc/get-media` | List media library files | `per_page`, `page`, `search`, `mime_type` |
 | `wmc/create-media` | Upload a media file | `url`, `title`, `alt_text` |
-| `wmc/update-media` | Update media metadata | `id`, `title`, `alt_text`, `caption` |
+| `wmc/update-media` | Update a single media item | `id`, `title`, `alt_text`, `caption`, `description` |
 | `wmc/delete-media` | Delete a media file | `id` |
+| `wmc/get-media-details` | Full metadata of one item (alt, caption, dimensions, file size, attached post) | `id` |
+| `wmc/get-media-without-alt` | Find all images missing alt text — SEO audit | `per_page`, `page`, `mime_type` |
+| `wmc/search-media` | Advanced search by title/alt/desc, MIME type, date range, attached status, alt presence | `search`, `mime_type`, `attached`, `date_after`, `date_before`, `has_alt`, `per_page` |
+| `wmc/bulk-update-media` | Update alt text, title, description, caption for multiple items in one call | `items[]` (id, alt_text, title, description, caption) |
+| `wmc/bulk-delete-media` | Delete multiple items by ID array in one call | `ids[]` |
+
+**Bulk update example:**
+```json
+{
+  "items": [
+    { "id": 101, "alt_text": "Red hoodie front view", "caption": "Available in 5 colors" },
+    { "id": 102, "alt_text": "Blue hoodie side view", "title": "Hoodie Blue" },
+    { "id": 103, "alt_text": "Classic black hoodie" }
+  ]
+}
+```
+Response includes `updated_count`, `failed_count`, and per-item `updated`/`failed` arrays.
+
+**SEO audit — find missing alt text:**
+```bash
+curl -u 'admin:pass' -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"per_page": 100, "mime_type": "image"}' \
+  https://yoursite.com/wp-json/wp-abilities/v1/abilities/wmc/get-media-without-alt/run
+```
 
 ---
 
