@@ -126,6 +126,10 @@ class WMC_Abilities {
 		self::register_widget_abilities();
 		self::register_theme_abilities();
 		self::register_seo_abilities();
+		self::register_plugin_abilities();
+		self::register_roles_abilities();
+		self::register_woocommerce_abilities();
+		self::register_system_abilities();
 	}
 
 	/**
@@ -3080,6 +3084,847 @@ class WMC_Abilities {
 			'page_id'   => $page_id,
 			'plugin'    => $seo_plugin,
 			'message'   => $updated ? 'SEO meta updated successfully' : 'No SEO plugin detected or no fields updated',
+		);
+	}
+
+	/**
+	 * ==================== PLUGIN MANAGEMENT ABILITIES ====================
+	 */
+
+	private static function register_plugin_abilities() {
+		self::wmc_register(
+			'wmc/get-plugins',
+			array(
+				'label'       => 'Get Plugins',
+				'description' => 'List all installed WordPress plugins with their status',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'status' => array(
+							'type'        => 'string',
+							'description' => 'Filter by status: all, active, inactive',
+							'enum'        => array( 'all', 'active', 'inactive' ),
+							'default'     => 'all',
+						),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'get_plugins' ),
+				'permission_callback' => fn() => current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/activate-plugin',
+			array(
+				'label'       => 'Activate Plugin',
+				'description' => 'Activate an installed WordPress plugin',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'plugin' => array(
+							'type'        => 'string',
+							'description' => 'Plugin file path (e.g. "woocommerce/woocommerce.php")',
+						),
+					),
+					'required' => array( 'plugin' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'activate_plugin_cb' ),
+				'permission_callback' => fn() => current_user_can( 'activate_plugins' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/deactivate-plugin',
+			array(
+				'label'       => 'Deactivate Plugin',
+				'description' => 'Deactivate an active WordPress plugin',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'plugin' => array(
+							'type'        => 'string',
+							'description' => 'Plugin file path (e.g. "woocommerce/woocommerce.php")',
+						),
+					),
+					'required' => array( 'plugin' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'deactivate_plugin_cb' ),
+				'permission_callback' => fn() => current_user_can( 'activate_plugins' ),
+			)
+		);
+	}
+
+	public static function get_plugins( $input ) {
+		if ( ! self::is_enabled( 'plugins', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$all_plugins    = get_plugins();
+		$active_plugins = get_option( 'active_plugins', array() );
+		$status_filter  = $input['status'] ?? 'all';
+		$result         = array();
+
+		foreach ( $all_plugins as $file => $data ) {
+			$is_active = in_array( $file, $active_plugins, true );
+
+			if ( $status_filter === 'active' && ! $is_active ) {
+				continue;
+			}
+			if ( $status_filter === 'inactive' && $is_active ) {
+				continue;
+			}
+
+			$result[] = array(
+				'file'        => $file,
+				'name'        => $data['Name'],
+				'version'     => $data['Version'],
+				'description' => $data['Description'],
+				'author'      => $data['Author'],
+				'status'      => $is_active ? 'active' : 'inactive',
+			);
+		}
+
+		return array(
+			'success' => true,
+			'count'   => count( $result ),
+			'plugins' => $result,
+		);
+	}
+
+	public static function activate_plugin_cb( $input ) {
+		if ( ! self::is_enabled( 'plugins', 'write' ) ) {
+			return self::get_disabled_error( 'Activate Plugin' );
+		}
+
+		if ( ! function_exists( 'activate_plugin' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$plugin = sanitize_text_field( $input['plugin'] );
+		$result = activate_plugin( $plugin );
+
+		if ( is_wp_error( $result ) ) {
+			return array(
+				'success' => false,
+				'message' => $result->get_error_message(),
+			);
+		}
+
+		return array(
+			'success' => true,
+			'plugin'  => $plugin,
+			'message' => 'Plugin activated successfully',
+		);
+	}
+
+	public static function deactivate_plugin_cb( $input ) {
+		if ( ! self::is_enabled( 'plugins', 'write' ) ) {
+			return self::get_disabled_error( 'Deactivate Plugin' );
+		}
+
+		if ( ! function_exists( 'deactivate_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$plugin = sanitize_text_field( $input['plugin'] );
+		deactivate_plugins( $plugin );
+
+		return array(
+			'success' => true,
+			'plugin'  => $plugin,
+			'message' => 'Plugin deactivated successfully',
+		);
+	}
+
+	/**
+	 * ==================== USER ROLES & PERMISSIONS ABILITIES ====================
+	 */
+
+	private static function register_roles_abilities() {
+		self::wmc_register(
+			'wmc/get-roles',
+			array(
+				'label'       => 'Get User Roles',
+				'description' => 'List all WordPress user roles with their capabilities',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'include_caps' => array(
+							'type'        => 'boolean',
+							'description' => 'Include full capabilities list for each role',
+							'default'     => false,
+						),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'get_roles' ),
+				'permission_callback' => fn() => current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/assign-role',
+			array(
+				'label'       => 'Assign Role',
+				'description' => 'Assign a role to a WordPress user',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'user_id' => array(
+							'type'        => 'integer',
+							'description' => 'The user ID',
+						),
+						'role' => array(
+							'type'        => 'string',
+							'description' => 'Role slug (e.g. "editor", "author", "subscriber")',
+						),
+					),
+					'required' => array( 'user_id', 'role' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'assign_role' ),
+				'permission_callback' => fn() => current_user_can( 'edit_users' ),
+			)
+		);
+	}
+
+	public static function get_roles( $input ) {
+		if ( ! self::is_enabled( 'roles', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		global $wp_roles;
+		$include_caps = ! empty( $input['include_caps'] );
+		$result       = array();
+
+		foreach ( $wp_roles->roles as $slug => $role ) {
+			$entry = array(
+				'slug'  => $slug,
+				'name'  => $role['name'],
+				'count' => count_users()['avail_roles'][ $slug ] ?? 0,
+			);
+			if ( $include_caps ) {
+				$entry['capabilities'] = array_keys( array_filter( $role['capabilities'] ) );
+			}
+			$result[] = $entry;
+		}
+
+		return array(
+			'success' => true,
+			'roles'   => $result,
+		);
+	}
+
+	public static function assign_role( $input ) {
+		if ( ! self::is_enabled( 'roles', 'write' ) ) {
+			return self::get_disabled_error( 'Assign Role' );
+		}
+
+		$user = get_user_by( 'id', (int) $input['user_id'] );
+		if ( ! $user ) {
+			return array( 'success' => false, 'message' => 'User not found' );
+		}
+
+		global $wp_roles;
+		$role = sanitize_key( $input['role'] );
+		if ( ! isset( $wp_roles->roles[ $role ] ) ) {
+			return array( 'success' => false, 'message' => 'Invalid role: ' . $role );
+		}
+
+		$user->set_role( $role );
+
+		return array(
+			'success'  => true,
+			'user_id'  => $user->ID,
+			'username' => $user->user_login,
+			'role'     => $role,
+			'message'  => 'Role assigned successfully',
+		);
+	}
+
+	/**
+	 * ==================== WOOCOMMERCE ABILITIES ====================
+	 */
+
+	private static function register_woocommerce_abilities() {
+		self::wmc_register(
+			'wmc/get-woo-products',
+			array(
+				'label'       => 'Get WooCommerce Products',
+				'description' => 'List WooCommerce products (requires WooCommerce)',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'per_page' => array( 'type' => 'integer', 'default' => 20, 'minimum' => 1, 'maximum' => 100 ),
+						'page'     => array( 'type' => 'integer', 'default' => 1 ),
+						'status'   => array( 'type' => 'string', 'description' => 'publish, draft, etc.' ),
+						'search'   => array( 'type' => 'string' ),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'get_woo_products' ),
+				'permission_callback' => fn() => current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/create-woo-product',
+			array(
+				'label'       => 'Create WooCommerce Product',
+				'description' => 'Create a new WooCommerce product',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'name'              => array( 'type' => 'string', 'description' => 'Product name' ),
+						'description'       => array( 'type' => 'string' ),
+						'short_description' => array( 'type' => 'string' ),
+						'regular_price'     => array( 'type' => 'string', 'description' => 'Price (e.g. "29.99")' ),
+						'sale_price'        => array( 'type' => 'string' ),
+						'status'            => array( 'type' => 'string', 'default' => 'publish' ),
+						'stock_quantity'    => array( 'type' => 'integer' ),
+						'sku'               => array( 'type' => 'string' ),
+					),
+					'required' => array( 'name', 'regular_price' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'create_woo_product' ),
+				'permission_callback' => fn() => current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/update-woo-product',
+			array(
+				'label'       => 'Update WooCommerce Product',
+				'description' => 'Update an existing WooCommerce product',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id'                => array( 'type' => 'integer', 'description' => 'Product ID' ),
+						'name'              => array( 'type' => 'string' ),
+						'description'       => array( 'type' => 'string' ),
+						'short_description' => array( 'type' => 'string' ),
+						'regular_price'     => array( 'type' => 'string' ),
+						'sale_price'        => array( 'type' => 'string' ),
+						'status'            => array( 'type' => 'string' ),
+						'stock_quantity'    => array( 'type' => 'integer' ),
+						'sku'               => array( 'type' => 'string' ),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'update_woo_product' ),
+				'permission_callback' => fn() => current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/get-woo-orders',
+			array(
+				'label'       => 'Get WooCommerce Orders',
+				'description' => 'List WooCommerce orders with filtering',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'per_page' => array( 'type' => 'integer', 'default' => 20, 'minimum' => 1, 'maximum' => 100 ),
+						'page'     => array( 'type' => 'integer', 'default' => 1 ),
+						'status'   => array( 'type' => 'string', 'description' => 'pending, processing, completed, cancelled, refunded, failed' ),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'get_woo_orders' ),
+				'permission_callback' => fn() => current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/update-woo-order-status',
+			array(
+				'label'       => 'Update WooCommerce Order Status',
+				'description' => 'Change the status of a WooCommerce order',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'order_id' => array( 'type' => 'integer', 'description' => 'Order ID' ),
+						'status'   => array( 'type' => 'string', 'description' => 'New status: pending, processing, completed, cancelled, refunded, failed' ),
+						'note'     => array( 'type' => 'string', 'description' => 'Optional order note' ),
+					),
+					'required' => array( 'order_id', 'status' ),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'update_woo_order_status' ),
+				'permission_callback' => fn() => current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/get-woo-customers',
+			array(
+				'label'       => 'Get WooCommerce Customers',
+				'description' => 'List WooCommerce customers',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'per_page' => array( 'type' => 'integer', 'default' => 20, 'minimum' => 1, 'maximum' => 100 ),
+						'page'     => array( 'type' => 'integer', 'default' => 1 ),
+						'search'   => array( 'type' => 'string', 'description' => 'Search by name or email' ),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'get_woo_customers' ),
+				'permission_callback' => fn() => current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' ),
+			)
+		);
+	}
+
+	private static function woo_active() {
+		return class_exists( 'WooCommerce' );
+	}
+
+	public static function get_woo_products( $input ) {
+		if ( ! self::is_enabled( 'woocommerce', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+		if ( ! self::woo_active() ) {
+			return array( 'success' => false, 'message' => 'WooCommerce is not installed or active' );
+		}
+
+		$args = array(
+			'post_type'      => 'product',
+			'posts_per_page' => (int) ( $input['per_page'] ?? 20 ),
+			'paged'          => (int) ( $input['page'] ?? 1 ),
+			'post_status'    => $input['status'] ?? 'publish',
+		);
+		if ( ! empty( $input['search'] ) ) {
+			$args['s'] = sanitize_text_field( $input['search'] );
+		}
+
+		$query    = new WP_Query( $args );
+		$products = array();
+
+		foreach ( $query->posts as $post ) {
+			$product = wc_get_product( $post->ID );
+			if ( ! $product ) {
+				continue;
+			}
+			$products[] = array(
+				'id'            => $product->get_id(),
+				'name'          => $product->get_name(),
+				'sku'           => $product->get_sku(),
+				'status'        => $product->get_status(),
+				'regular_price' => $product->get_regular_price(),
+				'sale_price'    => $product->get_sale_price(),
+				'stock_qty'     => $product->get_stock_quantity(),
+				'type'          => $product->get_type(),
+				'url'           => get_permalink( $post->ID ),
+			);
+		}
+
+		return array(
+			'success'     => true,
+			'count'       => count( $products ),
+			'total'       => $query->found_posts,
+			'total_pages' => $query->max_num_pages,
+			'products'    => $products,
+		);
+	}
+
+	public static function create_woo_product( $input ) {
+		if ( ! self::is_enabled( 'woocommerce', 'write' ) ) {
+			return self::get_disabled_error( 'Create' );
+		}
+		if ( ! self::woo_active() ) {
+			return array( 'success' => false, 'message' => 'WooCommerce is not installed or active' );
+		}
+
+		$product = new WC_Product_Simple();
+		$product->set_name( sanitize_text_field( $input['name'] ) );
+		$product->set_status( $input['status'] ?? 'publish' );
+
+		if ( isset( $input['description'] ) ) {
+			$product->set_description( wp_kses_post( $input['description'] ) );
+		}
+		if ( isset( $input['short_description'] ) ) {
+			$product->set_short_description( wp_kses_post( $input['short_description'] ) );
+		}
+		if ( isset( $input['regular_price'] ) ) {
+			$product->set_regular_price( sanitize_text_field( $input['regular_price'] ) );
+		}
+		if ( isset( $input['sale_price'] ) ) {
+			$product->set_sale_price( sanitize_text_field( $input['sale_price'] ) );
+		}
+		if ( isset( $input['sku'] ) ) {
+			$product->set_sku( sanitize_text_field( $input['sku'] ) );
+		}
+		if ( isset( $input['stock_quantity'] ) ) {
+			$product->set_manage_stock( true );
+			$product->set_stock_quantity( (int) $input['stock_quantity'] );
+		}
+
+		$id = $product->save();
+
+		return array(
+			'success' => true,
+			'id'      => $id,
+			'name'    => $product->get_name(),
+			'url'     => get_permalink( $id ),
+			'message' => 'Product created successfully',
+		);
+	}
+
+	public static function update_woo_product( $input ) {
+		if ( ! self::is_enabled( 'woocommerce', 'write' ) ) {
+			return self::get_disabled_error( 'Update' );
+		}
+		if ( ! self::woo_active() ) {
+			return array( 'success' => false, 'message' => 'WooCommerce is not installed or active' );
+		}
+
+		$product = wc_get_product( (int) $input['id'] );
+		if ( ! $product ) {
+			return array( 'success' => false, 'message' => 'Product not found' );
+		}
+
+		if ( isset( $input['name'] ) )              $product->set_name( sanitize_text_field( $input['name'] ) );
+		if ( isset( $input['description'] ) )       $product->set_description( wp_kses_post( $input['description'] ) );
+		if ( isset( $input['short_description'] ) ) $product->set_short_description( wp_kses_post( $input['short_description'] ) );
+		if ( isset( $input['regular_price'] ) )     $product->set_regular_price( sanitize_text_field( $input['regular_price'] ) );
+		if ( isset( $input['sale_price'] ) )        $product->set_sale_price( sanitize_text_field( $input['sale_price'] ) );
+		if ( isset( $input['status'] ) )            $product->set_status( $input['status'] );
+		if ( isset( $input['sku'] ) )               $product->set_sku( sanitize_text_field( $input['sku'] ) );
+		if ( isset( $input['stock_quantity'] ) ) {
+			$product->set_manage_stock( true );
+			$product->set_stock_quantity( (int) $input['stock_quantity'] );
+		}
+
+		$product->save();
+
+		return array(
+			'success' => true,
+			'id'      => $product->get_id(),
+			'name'    => $product->get_name(),
+			'message' => 'Product updated successfully',
+		);
+	}
+
+	public static function get_woo_orders( $input ) {
+		if ( ! self::is_enabled( 'woocommerce', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+		if ( ! self::woo_active() ) {
+			return array( 'success' => false, 'message' => 'WooCommerce is not installed or active' );
+		}
+
+		$args = array(
+			'limit'  => (int) ( $input['per_page'] ?? 20 ),
+			'page'   => (int) ( $input['page'] ?? 1 ),
+			'return' => 'objects',
+		);
+		if ( ! empty( $input['status'] ) ) {
+			$args['status'] = sanitize_text_field( $input['status'] );
+		}
+
+		$orders = wc_get_orders( $args );
+		$result = array();
+
+		foreach ( $orders as $order ) {
+			$result[] = array(
+				'id'         => $order->get_id(),
+				'status'     => $order->get_status(),
+				'total'      => $order->get_total(),
+				'currency'   => $order->get_currency(),
+				'customer'   => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+				'email'      => $order->get_billing_email(),
+				'date'       => $order->get_date_created() ? $order->get_date_created()->date( 'Y-m-d H:i:s' ) : null,
+				'items_count'=> count( $order->get_items() ),
+			);
+		}
+
+		return array(
+			'success' => true,
+			'count'   => count( $result ),
+			'orders'  => $result,
+		);
+	}
+
+	public static function update_woo_order_status( $input ) {
+		if ( ! self::is_enabled( 'woocommerce', 'write' ) ) {
+			return self::get_disabled_error( 'Update' );
+		}
+		if ( ! self::woo_active() ) {
+			return array( 'success' => false, 'message' => 'WooCommerce is not installed or active' );
+		}
+
+		$order = wc_get_order( (int) $input['order_id'] );
+		if ( ! $order ) {
+			return array( 'success' => false, 'message' => 'Order not found' );
+		}
+
+		$valid_statuses = array( 'pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed' );
+		$new_status     = sanitize_text_field( $input['status'] );
+
+		if ( ! in_array( $new_status, $valid_statuses, true ) ) {
+			return array( 'success' => false, 'message' => 'Invalid status. Use: ' . implode( ', ', $valid_statuses ) );
+		}
+
+		$order->update_status( $new_status, $input['note'] ?? '' );
+
+		return array(
+			'success'  => true,
+			'order_id' => $order->get_id(),
+			'status'   => $order->get_status(),
+			'message'  => 'Order status updated successfully',
+		);
+	}
+
+	public static function get_woo_customers( $input ) {
+		if ( ! self::is_enabled( 'woocommerce', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+		if ( ! self::woo_active() ) {
+			return array( 'success' => false, 'message' => 'WooCommerce is not installed or active' );
+		}
+
+		$args = array(
+			'role'   => 'customer',
+			'number' => (int) ( $input['per_page'] ?? 20 ),
+			'paged'  => (int) ( $input['page'] ?? 1 ),
+		);
+		if ( ! empty( $input['search'] ) ) {
+			$args['search']         = '*' . sanitize_text_field( $input['search'] ) . '*';
+			$args['search_columns'] = array( 'user_login', 'user_email', 'display_name' );
+		}
+
+		$users  = get_users( $args );
+		$result = array();
+
+		foreach ( $users as $user ) {
+			$result[] = array(
+				'id'           => $user->ID,
+				'name'         => $user->display_name,
+				'email'        => $user->user_email,
+				'registered'   => $user->user_registered,
+				'orders_count' => wc_get_customer_order_count( $user->ID ),
+				'total_spent'  => wc_get_customer_total_spent( $user->ID ),
+			);
+		}
+
+		return array(
+			'success'   => true,
+			'count'     => count( $result ),
+			'customers' => $result,
+		);
+	}
+
+	/**
+	 * ==================== SYSTEM / MAINTENANCE ABILITIES ====================
+	 */
+
+	private static function register_system_abilities() {
+		self::wmc_register(
+			'wmc/get-site-health',
+			array(
+				'label'       => 'Get Site Health',
+				'description' => 'Retrieve WordPress site health information',
+				'category'    => 'wp-content-manager',
+				'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'get_site_health' ),
+				'permission_callback' => fn() => current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/clear-cache',
+			array(
+				'label'       => 'Clear Cache',
+				'description' => 'Clear WordPress object cache and common caching plugins',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'type' => array(
+							'type'        => 'string',
+							'description' => 'Cache type: all, object, transients',
+							'enum'        => array( 'all', 'object', 'transients' ),
+							'default'     => 'all',
+						),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'clear_cache' ),
+				'permission_callback' => fn() => current_user_can( 'manage_options' ),
+			)
+		);
+
+		self::wmc_register(
+			'wmc/get-cron-jobs',
+			array(
+				'label'       => 'Get Cron Jobs',
+				'description' => 'List all scheduled WordPress cron jobs',
+				'category'    => 'wp-content-manager',
+				'input_schema' => array(
+					'type'       => 'object',
+					'properties' => array(
+						'filter' => array(
+							'type'        => 'string',
+							'description' => 'Filter by hook name (partial match)',
+						),
+					),
+				),
+				'output_schema'       => array( 'type' => 'object' ),
+				'execute_callback'    => array( self::class, 'get_cron_jobs' ),
+				'permission_callback' => fn() => current_user_can( 'manage_options' ),
+			)
+		);
+	}
+
+	public static function get_site_health( $input ) {
+		if ( ! self::is_enabled( 'system', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		global $wpdb;
+
+		$update_data = get_site_transient( 'update_core' );
+		$wp_version  = get_bloginfo( 'version' );
+		$latest_wp   = $update_data->updates[0]->version ?? $wp_version;
+
+		return array(
+			'success'        => true,
+			'wordpress'      => array(
+				'version'        => $wp_version,
+				'latest'         => $latest_wp,
+				'up_to_date'     => version_compare( $wp_version, $latest_wp, '>=' ),
+				'multisite'      => is_multisite(),
+				'debug_mode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
+			),
+			'php'            => array(
+				'version'        => PHP_VERSION,
+				'memory_limit'   => ini_get( 'memory_limit' ),
+				'max_execution'  => ini_get( 'max_execution_time' ) . 's',
+				'upload_max'     => ini_get( 'upload_max_filesize' ),
+			),
+			'database'       => array(
+				'version'        => $wpdb->db_version(),
+				'prefix'         => $wpdb->prefix,
+				'charset'        => DB_CHARSET,
+			),
+			'server'         => array(
+				'software'       => $_SERVER['SERVER_SOFTWARE'] ?? 'unknown',
+				'https'          => is_ssl(),
+				'timezone'       => wp_timezone_string(),
+			),
+			'active_plugins' => count( get_option( 'active_plugins', array() ) ),
+			'theme'          => wp_get_theme()->get( 'Name' ),
+			'uploads_dir'    => wp_upload_dir()['basedir'],
+		);
+	}
+
+	public static function clear_cache( $input ) {
+		if ( ! self::is_enabled( 'system', 'write' ) ) {
+			return self::get_disabled_error( 'Clear Cache' );
+		}
+
+		$type    = $input['type'] ?? 'all';
+		$cleared = array();
+
+		if ( in_array( $type, array( 'all', 'object' ), true ) ) {
+			wp_cache_flush();
+			$cleared[] = 'object_cache';
+		}
+
+		if ( in_array( $type, array( 'all', 'transients' ), true ) ) {
+			global $wpdb;
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'" );
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_site_transient_%'" );
+			$cleared[] = 'transients';
+		}
+
+		// W3 Total Cache
+		if ( function_exists( 'w3tc_flush_all' ) ) {
+			w3tc_flush_all();
+			$cleared[] = 'w3tc';
+		}
+
+		// WP Super Cache
+		if ( function_exists( 'wp_cache_clear_cache' ) ) {
+			wp_cache_clear_cache();
+			$cleared[] = 'wp_super_cache';
+		}
+
+		// WP Rocket
+		if ( function_exists( 'rocket_clean_domain' ) ) {
+			rocket_clean_domain();
+			$cleared[] = 'wp_rocket';
+		}
+
+		// LiteSpeed Cache
+		if ( class_exists( 'LiteSpeed_Cache_API' ) ) {
+			\LiteSpeed_Cache_API::purge_all();
+			$cleared[] = 'litespeed';
+		}
+
+		return array(
+			'success' => true,
+			'cleared' => $cleared,
+			'message' => 'Cache cleared: ' . implode( ', ', $cleared ),
+		);
+	}
+
+	public static function get_cron_jobs( $input ) {
+		if ( ! self::is_enabled( 'system', 'read' ) ) {
+			return self::get_disabled_error( 'Read' );
+		}
+
+		$crons  = _get_cron_array();
+		$filter = $input['filter'] ?? '';
+		$result = array();
+
+		if ( ! is_array( $crons ) ) {
+			return array( 'success' => true, 'count' => 0, 'jobs' => array() );
+		}
+
+		foreach ( $crons as $timestamp => $hooks ) {
+			foreach ( $hooks as $hook => $events ) {
+				if ( $filter && stripos( $hook, $filter ) === false ) {
+					continue;
+				}
+				foreach ( $events as $key => $event ) {
+					$result[] = array(
+						'hook'      => $hook,
+						'next_run'  => date( 'Y-m-d H:i:s', $timestamp ),
+						'interval'  => $event['schedule'] ?: 'one-time',
+						'args'      => $event['args'],
+					);
+				}
+			}
+		}
+
+		usort( $result, fn( $a, $b ) => strcmp( $a['next_run'], $b['next_run'] ) );
+
+		return array(
+			'success' => true,
+			'count'   => count( $result ),
+			'jobs'    => $result,
 		);
 	}
 }

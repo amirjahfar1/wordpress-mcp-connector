@@ -386,6 +386,103 @@ class WMC_Settings {
 							<td style="color: #d63638;">Allow modification of SEO metadata (meta title, description, robots)</td>
 						</tr>
 					</table>
+
+					<h2>🔌 Plugin Management</h2>
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="wmc_plugins_read">
+									<input type="checkbox" id="wmc_plugins_read" name="wmc_abilities_config[plugins][read]" value="1"
+										<?php checked( self::is_ability_enabled( 'plugins', 'read' ), true ); ?> />
+									Read Plugins (Get)
+								</label>
+							</th>
+							<td>Allow listing all installed plugins and their status</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="wmc_plugins_write">
+									<input type="checkbox" id="wmc_plugins_write" name="wmc_abilities_config[plugins][write]" value="1"
+										<?php checked( self::is_ability_enabled( 'plugins', 'write' ), true ); ?> />
+									Activate / Deactivate Plugins ⚠️
+								</label>
+							</th>
+							<td style="color: #d63638;">Allow activating and deactivating installed plugins</td>
+						</tr>
+					</table>
+
+					<h2>👥 User Roles &amp; Permissions</h2>
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="wmc_roles_read">
+									<input type="checkbox" id="wmc_roles_read" name="wmc_abilities_config[roles][read]" value="1"
+										<?php checked( self::is_ability_enabled( 'roles', 'read' ), true ); ?> />
+									Read Roles (Get)
+								</label>
+							</th>
+							<td>Allow listing all WordPress user roles and their capabilities</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="wmc_roles_write">
+									<input type="checkbox" id="wmc_roles_write" name="wmc_abilities_config[roles][write]" value="1"
+										<?php checked( self::is_ability_enabled( 'roles', 'write' ), true ); ?> />
+									Assign Roles ⚠️
+								</label>
+							</th>
+							<td style="color: #d63638;">Allow assigning roles to users</td>
+						</tr>
+					</table>
+
+					<h2>🛒 WooCommerce Management</h2>
+					<p style="color: #666; margin: 0 0 10px;">Requires WooCommerce to be installed and active. Abilities return an error if WooCommerce is missing.</p>
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="wmc_woocommerce_read">
+									<input type="checkbox" id="wmc_woocommerce_read" name="wmc_abilities_config[woocommerce][read]" value="1"
+										<?php checked( self::is_ability_enabled( 'woocommerce', 'read' ), true ); ?> />
+									Read WooCommerce (Products, Orders, Customers)
+								</label>
+							</th>
+							<td>Allow reading products, orders, and customers from WooCommerce</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="wmc_woocommerce_write">
+									<input type="checkbox" id="wmc_woocommerce_write" name="wmc_abilities_config[woocommerce][write]" value="1"
+										<?php checked( self::is_ability_enabled( 'woocommerce', 'write' ), true ); ?> />
+									Write WooCommerce (Create/Update Products, Update Order Status) ⚠️
+								</label>
+							</th>
+							<td style="color: #d63638;">Allow creating/updating products and changing order statuses</td>
+						</tr>
+					</table>
+
+					<h2>⚙️ System / Maintenance</h2>
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="wmc_system_read">
+									<input type="checkbox" id="wmc_system_read" name="wmc_abilities_config[system][read]" value="1"
+										<?php checked( self::is_ability_enabled( 'system', 'read' ), true ); ?> />
+									Read System Info (Site Health, Cron Jobs)
+								</label>
+							</th>
+							<td>Allow retrieving site health information and scheduled cron jobs</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="wmc_system_write">
+									<input type="checkbox" id="wmc_system_write" name="wmc_abilities_config[system][write]" value="1"
+										<?php checked( self::is_ability_enabled( 'system', 'write' ), true ); ?> />
+									Write System (Clear Cache) ⚠️
+								</label>
+							</th>
+							<td style="color: #d63638;">Allow clearing WordPress object cache and transients</td>
+						</tr>
+					</table>
 				</div>
 
 				<?php submit_button(); ?>
@@ -436,18 +533,22 @@ class WMC_Settings {
 	 */
 	public static function get_default_config() {
 		return array(
-			'posts'      => array( 'read' => 1, 'create' => 1, 'update' => 1, 'delete' => 1 ),
-			'pages'      => array( 'read' => 1, 'create' => 1, 'update' => 1, 'delete' => 1 ),
-			'categories' => array( 'read' => 1, 'write' => 1 ),
-			'tags'       => array( 'read' => 1, 'write' => 1 ),
-			'media'      => array( 'read' => 1, 'write' => 1 ),
-			'comments'   => array( 'read' => 1, 'moderate' => 1, 'delete' => 1 ),
-			'users'      => array( 'read' => 1, 'write' => 1 ),
-			'settings'   => array( 'read' => 1, 'write' => 1 ),
-			'menus'      => array( 'read' => 1, 'write' => 1 ),
-			'widgets'    => array( 'read' => 1, 'write' => 1 ),
-			'themes'     => array( 'read' => 1, 'write' => 1 ),
-			'seo'        => array( 'read' => 1, 'write' => 1 ),
+			'posts'       => array( 'read' => 1, 'create' => 1, 'update' => 1, 'delete' => 1 ),
+			'pages'       => array( 'read' => 1, 'create' => 1, 'update' => 1, 'delete' => 1 ),
+			'categories'  => array( 'read' => 1, 'write' => 1 ),
+			'tags'        => array( 'read' => 1, 'write' => 1 ),
+			'media'       => array( 'read' => 1, 'write' => 1 ),
+			'comments'    => array( 'read' => 1, 'moderate' => 1, 'delete' => 1 ),
+			'users'       => array( 'read' => 1, 'write' => 1 ),
+			'settings'    => array( 'read' => 1, 'write' => 1 ),
+			'menus'       => array( 'read' => 1, 'write' => 1 ),
+			'widgets'     => array( 'read' => 1, 'write' => 1 ),
+			'themes'      => array( 'read' => 1, 'write' => 1 ),
+			'seo'         => array( 'read' => 1, 'write' => 1 ),
+			'plugins'     => array( 'read' => 1, 'write' => 1 ),
+			'roles'       => array( 'read' => 1, 'write' => 1 ),
+			'woocommerce' => array( 'read' => 1, 'write' => 1 ),
+			'system'      => array( 'read' => 1, 'write' => 1 ),
 		);
 	}
 }

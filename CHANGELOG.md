@@ -2,6 +2,27 @@
 
 ---
 
+## v2.3.0 — 2026-06-12
+
+### Feature: Plugin Management, User Roles, WooCommerce & System Maintenance
+
+**16 new abilities across 4 new categories (total: 58):**
+
+| Category | Abilities |
+|---|---|
+| **Plugin Management** | `wmc/get-plugins`, `wmc/activate-plugin`, `wmc/deactivate-plugin` |
+| **User Roles & Permissions** | `wmc/get-roles`, `wmc/assign-role` |
+| **WooCommerce** | `wmc/get-woo-products`, `wmc/create-woo-product`, `wmc/update-woo-product`, `wmc/get-woo-orders`, `wmc/update-woo-order-status`, `wmc/get-woo-customers` |
+| **System / Maintenance** | `wmc/get-site-health`, `wmc/clear-cache`, `wmc/get-cron-jobs` |
+
+**Admin dashboard:** 4 new sections added with individual read/write toggles. All abilities respect enable/disable state — disabled abilities return a structured error response.
+
+**WooCommerce:** Abilities gracefully return `"WooCommerce is not installed or active"` if the plugin is missing, so registration always succeeds regardless of environment.
+
+**Cache clearing** supports: WordPress object cache, transients, W3 Total Cache, WP Super Cache, WP Rocket, LiteSpeed Cache.
+
+---
+
 ## v2.2.3 — 2026-05-22
 
 ### Fix: Abilities now correctly register on WP 6.9+
