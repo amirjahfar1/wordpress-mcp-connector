@@ -2,6 +2,24 @@
 
 ---
 
+## v2.5.0 — 2026-06-12
+
+### Feature: Modern Card-Based Admin Dashboard
+
+Complete redesign of the WordPress Admin → MCP Connector settings page:
+
+- **Card UI** — every ability control is shown as its own card with toggle switch, badge, description, and ability slug
+- **Live counters** — active/disabled count updates instantly when toggles are flipped, no page reload needed
+- **Stats bar** — shows Total Abilities (63), Active, Categories (16), Disabled at a glance
+- **Section collapse** — every category is collapsible; arrow indicator shows open/closed state
+- **Enable All / Disable All** — global buttons plus per-section All/None buttons
+- **Badge system** — READ-ONLY (blue), WRITE (green), DESTRUCTIVE (red), MODERATE (orange)
+- **Card state** — enabled cards show with indigo border/tint; disabled cards are greyed/faded
+- **Diagnose link** — header shortcut to `/wp-json/wmc/v1/diagnose` for quick health check
+- Fully responsive (collapses to 1-column on mobile)
+
+---
+
 ## v2.4.0 — 2026-06-12
 
 ### Feature: Bulk & Advanced Media Management
