@@ -17,13 +17,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'WMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WMC_VERSION', '2.5.0' );
+define( 'WMC_VERSION', '2.6.0' );
 
 /**
  * Load the abilities and settings files
  */
 require_once WMC_PLUGIN_DIR . 'includes/settings.php';
 require_once WMC_PLUGIN_DIR . 'includes/abilities.php';
+
+/**
+ * Load bundled MCP Adapter (so no separate plugin needed)
+ */
+if ( ! class_exists( 'WP\MCP\Core\McpAdapter' ) ) {
+	require_once WMC_PLUGIN_DIR . 'vendor/autoload.php';
+
+	spl_autoload_register( function( $class ) {
+		$prefix = 'WP\\MCP\\';
+		if ( strpos( $class, $prefix ) !== 0 ) {
+			return;
+		}
+		$relative = str_replace( '\\', '/', substr( $class, strlen( $prefix ) ) );
+		$file = WMC_PLUGIN_DIR . 'mcp-adapter-lib/' . $relative . '.php';
+		if ( file_exists( $file ) ) {
+			require_once $file;
+		}
+	} );
+}
+
+add_action( 'plugins_loaded', function() {
+	if ( class_exists( 'WP\MCP\Core\McpAdapter' ) ) {
+		\WP\MCP\Core\McpAdapter::instance();
+	}
+} );
 
 /**
  * Register SEO meta fields for REST API access
