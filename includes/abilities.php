@@ -2689,7 +2689,7 @@ class WMC_Abilities {
 		);
 	}
 
-	public static function get_options( $input ) {
+	public static function get_options( $input = array() ) {
 		// CHECK PERMISSION
 		if ( ! self::is_enabled( 'settings', 'read' ) ) {
 			return self::get_disabled_error( 'Read' );
@@ -2828,7 +2828,7 @@ class WMC_Abilities {
 		);
 	}
 
-	public static function get_menus( $input ) {
+	public static function get_menus( $input = array() ) {
 		// CHECK PERMISSION
 		if ( ! self::is_enabled( 'menus', 'read' ) ) {
 			return self::get_disabled_error( 'Read' );
@@ -2951,7 +2951,7 @@ class WMC_Abilities {
 		);
 	}
 
-	public static function get_sidebars( $input ) {
+	public static function get_sidebars( $input = array() ) {
 		// CHECK PERMISSION
 		if ( ! self::is_enabled( 'widgets', 'read' ) ) {
 			return self::get_disabled_error( 'Read' );
@@ -3079,7 +3079,7 @@ class WMC_Abilities {
 		);
 	}
 
-	public static function get_themes( $input ) {
+	public static function get_themes( $input = array() ) {
 		// CHECK PERMISSION
 		if ( ! self::is_enabled( 'themes', 'read' ) ) {
 			return self::get_disabled_error( 'Read' );
@@ -3134,7 +3134,7 @@ class WMC_Abilities {
 		);
 	}
 
-	public static function get_theme_mods( $input ) {
+	public static function get_theme_mods( $input = array() ) {
 		// CHECK PERMISSION
 		if ( ! self::is_enabled( 'themes', 'read' ) ) {
 			return self::get_disabled_error( 'Read' );
