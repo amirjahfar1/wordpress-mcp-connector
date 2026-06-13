@@ -48,6 +48,12 @@ class WMC_Abilities {
 		if ( ! array_key_exists( 'show_in_rest', $args['meta'] ) ) {
 			$args['meta']['show_in_rest'] = true;
 		}
+		if ( ! isset( $args['meta']['mcp'] ) || ! is_array( $args['meta']['mcp'] ) ) {
+			$args['meta']['mcp'] = array();
+		}
+		if ( ! array_key_exists( 'public', $args['meta']['mcp'] ) ) {
+			$args['meta']['mcp']['public'] = true;
+		}
 		return wp_register_ability( $name, $args );
 	}
 
