@@ -1,10 +1,11 @@
 <?php
 /**
  * Plugin Name: WordPress MCP Connector
- * Plugin URI: https://github.com/essentialshoodie
+ * Plugin URI: https://nextbrainsolutions.com
  * Description: Exposes full WordPress CRUD operations via Abilities API for MCP integration. Manage posts, pages, categories, tags, media, comments, users, settings, menus, widgets, themes, plugins, roles, WooCommerce, and system maintenance.
- * Version: 2.5.0
- * Author: WordPress MCP Team
+ * Version: 2.6.0
+ * Author: Amir Ali
+ * Author URI: https://nextbrainsolutions.com
  * License: GPL-2.0-or-later
  * Text Domain: wordpress-mcp-connector
  * Domain Path: /languages
