@@ -289,7 +289,7 @@ class WMC_Settings {
 						<div class="wmc-step-num">3</div>
 						<div class="wmc-step-content">
 							<div class="wmc-step-title">Add to Claude Code MCP config</div>
-							<div class="wmc-step-desc">Paste this into your <code>claude_desktop_config.json</code> or Claude Code settings.</div>
+							<div class="wmc-step-desc">Copy this and paste into <code>.mcp.json</code> in your project — or give it to Claude and say <em>"update my MCP config with this"</em>.</div>
 							<div class="wmc-token-wrap" style="margin-top:8px">
 								<textarea id="wmc-config-json" class="wmc-token-input wmc-config-textarea" readonly rows="8"></textarea>
 								<button type="button" class="wmc-copy-btn" onclick="wmcCopyConfig()" style="align-self:flex-start">Copy JSON</button>
@@ -768,21 +768,20 @@ class WMC_Settings {
 					document.getElementById('wmc-cred-user').textContent = d.username;
 					document.getElementById('wmc-cred-pass').textContent = d.password;
 
-					// Build MCP config JSON
-					var config = {
-						"mcpServers": {
-							"wordpress-mcp": {
-								"command": "npx",
-								"args": [
-									"@wp-mcp/server",
-									"--url", d.site_url,
-									"--username", d.username,
-									"--app-password", d.password
-								]
-							}
+					// Build MCP config JSON — matches @automattic/mcp-wordpress-remote format
+					var serverKey = 'wordpress-' + d.site_url.replace(/^https?:\/\//, '').replace(/[^a-z0-9]/gi, '-').replace(/-+$/, '');
+					var config = {};
+					config[serverKey] = {
+						"command": "npx",
+						"args": ["-y", "@automattic/mcp-wordpress-remote@latest"],
+						"env": {
+							"WP_API_URL": d.site_url + "/wp-json/mcp/mcp-adapter-default-server",
+							"WP_API_USERNAME": d.username,
+							"WP_API_PASSWORD": d.password
 						}
 					};
-					document.getElementById('wmc-config-json').value = JSON.stringify(config, null, 2);
+					var fullConfig = { "mcpServers": config };
+					document.getElementById('wmc-config-json').value = JSON.stringify(fullConfig, null, 2);
 
 					document.getElementById('wmc-creds-step').style.display = 'flex';
 					document.getElementById('wmc-config-step').style.display = 'flex';
