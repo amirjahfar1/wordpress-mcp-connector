@@ -38,6 +38,30 @@ class WMC_SEO_Abilities {
 	}
 
 	// ================================================================
+	//  DISABLED RESPONSE HELPER
+	// ================================================================
+
+	private static function is_enabled( $group, $operation ) {
+		if ( class_exists( 'WMC_Settings' ) ) {
+			return WMC_Settings::is_ability_enabled( $group, $operation );
+		}
+		return true;
+	}
+
+	private static function disabled( $label, $group, $op ) {
+		$url = admin_url( 'admin.php?page=wmc-settings' );
+		return array(
+			'success'      => false,
+			'disabled'     => true,
+			'ability'      => $label,
+			'message'      => "'{$label}' is currently DISABLED on your WordPress site.",
+			'how_to_enable'=> "Go to: WordPress Admin → MCP Connector → Enable '{$label}' → Save Changes",
+			'settings_url' => $url,
+			'config_key'   => "{$group} → {$op}",
+		);
+	}
+
+	// ================================================================
 	//  DETECT ACTIVE SEO PLUGIN
 	// ================================================================
 
@@ -545,6 +569,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function get_post_seo( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'meta' ) ) return self::disabled( 'Get / Set / Audit Post SEO', 'seo_adv', 'meta' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$post    = get_post( $post_id );
 		if ( ! $post ) return array( 'success' => false, 'message' => 'Post not found.' );
@@ -576,6 +601,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function set_post_seo( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'meta' ) ) return self::disabled( 'Get / Set / Audit Post SEO', 'seo_adv', 'meta' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$post    = get_post( $post_id );
 		if ( ! $post ) return array( 'success' => false, 'message' => 'Post not found.' );
@@ -609,6 +635,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function get_seo_audit( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'meta' ) ) return self::disabled( 'Get / Set / Audit Post SEO', 'seo_adv', 'meta' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$post    = get_post( $post_id );
 		if ( ! $post ) return array( 'success' => false, 'message' => 'Post not found.' );
@@ -694,6 +721,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function set_open_graph( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'social' ) ) return self::disabled( 'Open Graph & Twitter/X Card', 'seo_adv', 'social' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$post    = get_post( $post_id );
 		if ( ! $post ) return array( 'success' => false, 'message' => 'Post not found.' );
@@ -725,6 +753,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function set_twitter_card( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'social' ) ) return self::disabled( 'Open Graph & Twitter/X Card', 'seo_adv', 'social' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$post    = get_post( $post_id );
 		if ( ! $post ) return array( 'success' => false, 'message' => 'Post not found.' );
@@ -764,6 +793,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function add_schema_markup( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'schema' ) ) return self::disabled( 'Schema Markup (JSON-LD)', 'seo_adv', 'schema' );
 		$post_id     = intval( $params['post_id'] ?? 0 );
 		$schema_type = sanitize_text_field( $params['schema_type'] ?? '' );
 		$schema_data = $params['schema_data'] ?? array();
@@ -917,6 +947,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function get_schema_markup( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'schema' ) ) return self::disabled( 'Schema Markup (JSON-LD)', 'seo_adv', 'schema' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$post    = get_post( $post_id );
 		if ( ! $post ) return array( 'success' => false, 'message' => 'Post not found.' );
@@ -938,6 +969,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function get_sitemap_urls( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'sitemap' ) ) return self::disabled( 'Sitemap Management', 'seo_adv', 'sitemap' );
 		$post_type = sanitize_key( $params['post_type'] ?? '' );
 		$limit     = intval( $params['limit'] ?? 100 );
 
@@ -975,6 +1007,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function ping_search_engines( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'sitemap' ) ) return self::disabled( 'Sitemap Management', 'seo_adv', 'sitemap' );
 		$sitemap = esc_url_raw( $params['sitemap_url'] ?? '' );
 		if ( ! $sitemap ) {
 			$sitemap = get_home_url() . '/wp-sitemap.xml';
@@ -1006,6 +1039,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function exclude_from_sitemap( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'sitemap' ) ) return self::disabled( 'Sitemap Management', 'seo_adv', 'sitemap' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$exclude = (bool) ( $params['exclude'] ?? true );
 		$plugin  = $params['plugin'] ?? 'auto';
@@ -1029,6 +1063,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function set_canonical_url( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'canonical' ) ) return self::disabled( 'Canonical URL & Redirects', 'seo_adv', 'canonical' );
 		$post_id       = intval( $params['post_id'] ?? 0 );
 		$canonical_url = esc_url_raw( $params['canonical_url'] ?? '' );
 		$plugin        = $params['plugin'] ?? 'auto';
@@ -1056,6 +1091,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function manage_redirects( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'canonical' ) ) return self::disabled( 'Canonical URL & Redirects', 'seo_adv', 'canonical' );
 		$action = sanitize_key( $params['action'] ?? '' );
 		$from   = sanitize_text_field( $params['from'] ?? '' );
 		$to     = esc_url_raw( $params['to'] ?? '' );
@@ -1092,6 +1128,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function set_focus_keyword( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'keywords' ) ) return self::disabled( 'Focus Keywords (Bulk)', 'seo_adv', 'keywords' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$keyword = sanitize_text_field( $params['keyword'] ?? '' );
 		$plugin  = $params['plugin'] ?? 'auto';
@@ -1112,6 +1149,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function bulk_set_focus_keywords( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'keywords' ) ) return self::disabled( 'Focus Keywords (Bulk)', 'seo_adv', 'keywords' );
 		$items  = $params['items'] ?? array();
 		$plugin = $params['plugin'] ?? 'auto';
 		$keys   = self::seo_meta_keys( $plugin );
@@ -1149,6 +1187,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function set_post_robots( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'robots' ) ) return self::disabled( 'Robots (noindex / nofollow)', 'seo_adv', 'robots' );
 		$post_id   = intval( $params['post_id'] ?? 0 );
 		$noindex   = (bool) ( $params['noindex'] ?? false );
 		$nofollow  = (bool) ( $params['nofollow'] ?? false );
@@ -1188,6 +1227,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function bulk_set_robots( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'robots' ) ) return self::disabled( 'Robots (noindex / nofollow)', 'seo_adv', 'robots' );
 		$post_ids  = array_map( 'intval', $params['post_ids'] ?? array() );
 		$noindex   = (bool) ( $params['noindex'] ?? false );
 		$nofollow  = (bool) ( $params['nofollow'] ?? false );
@@ -1219,6 +1259,7 @@ class WMC_SEO_Abilities {
 	// ================================================================
 
 	public static function seo_overview_report( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'reports' ) ) return self::disabled( 'SEO Reports & Audit', 'seo_adv', 'reports' );
 		$post_type = sanitize_key( $params['post_type'] ?? 'post' );
 		$limit     = intval( $params['limit'] ?? 100 );
 		$plugin    = $params['plugin'] ?? 'auto';
@@ -1282,6 +1323,7 @@ class WMC_SEO_Abilities {
 	}
 
 	public static function posts_missing_seo( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'reports' ) ) return self::disabled( 'SEO Reports & Audit', 'seo_adv', 'reports' );
 		$post_type   = sanitize_key( $params['post_type'] ?? 'post' );
 		$limit       = intval( $params['limit'] ?? 50 );
 		$plugin      = $params['plugin'] ?? 'auto';

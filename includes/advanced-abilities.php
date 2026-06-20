@@ -1396,7 +1396,28 @@ class WMC_Advanced_Abilities {
 	//  PERMALINK CALLBACKS
 	// ----------------------------------------------------------------
 
+	private static function permalink_disabled( $label, $op ) {
+		$url = admin_url( 'admin.php?page=wmc-settings' );
+		return array(
+			'success'      => false,
+			'disabled'     => true,
+			'ability'      => $label,
+			'message'      => "'{$label}' is currently DISABLED on your WordPress site.",
+			'how_to_enable'=> "Go to: WordPress Admin → MCP Connector → Permalinks & Slugs → Enable '{$label}' → Save Changes",
+			'settings_url' => $url,
+			'config_key'   => "permalinks → {$op}",
+		);
+	}
+
+	private static function permalink_is_enabled( $op ) {
+		if ( class_exists( 'WMC_Settings' ) ) {
+			return WMC_Settings::is_ability_enabled( 'permalinks', $op );
+		}
+		return true;
+	}
+
 	public static function get_permalink_structure() {
+		if ( ! self::permalink_is_enabled( 'read' ) ) return self::permalink_disabled( 'Get Permalink Structure', 'read' );
 		$structure = get_option( 'permalink_structure' );
 		$presets = array(
 			''                    => 'plain',
@@ -1418,6 +1439,7 @@ class WMC_Advanced_Abilities {
 	}
 
 	public static function set_permalink_structure( $params ) {
+		if ( ! self::permalink_is_enabled( 'write' ) ) return self::permalink_disabled( 'Set Permalink Structure', 'write' );
 		$input = $params['structure'] ?? '';
 
 		$presets = array(
@@ -1446,6 +1468,7 @@ class WMC_Advanced_Abilities {
 	}
 
 	public static function flush_rewrite_rules_ability() {
+		if ( ! self::permalink_is_enabled( 'write' ) ) return self::permalink_disabled( 'Flush Rewrite Rules', 'write' );
 		flush_rewrite_rules( true );
 		return array(
 			'success' => true,
@@ -1454,6 +1477,7 @@ class WMC_Advanced_Abilities {
 	}
 
 	public static function get_post_slug( $params ) {
+		if ( ! self::permalink_is_enabled( 'read' ) ) return self::permalink_disabled( 'Get Post/Page Slug', 'read' );
 		$post_id = intval( $params['post_id'] ?? 0 );
 		$post = get_post( $post_id );
 		if ( ! $post ) {
@@ -1471,6 +1495,7 @@ class WMC_Advanced_Abilities {
 	}
 
 	public static function set_post_slug( $params ) {
+		if ( ! self::permalink_is_enabled( 'write' ) ) return self::permalink_disabled( 'Set Post/Page Slug', 'write' );
 		$post_id  = intval( $params['post_id'] ?? 0 );
 		$new_slug = sanitize_title( $params['slug'] ?? '' );
 
@@ -1507,6 +1532,7 @@ class WMC_Advanced_Abilities {
 	}
 
 	public static function check_slug_availability( $params ) {
+		if ( ! self::permalink_is_enabled( 'read' ) ) return self::permalink_disabled( 'Check Slug Availability', 'read' );
 		$slug       = sanitize_title( $params['slug'] ?? '' );
 		$post_type  = sanitize_key( $params['post_type'] ?? 'post' );
 		$exclude_id = intval( $params['exclude_id'] ?? 0 );
@@ -1540,6 +1566,7 @@ class WMC_Advanced_Abilities {
 	}
 
 	public static function get_term_slug( $params ) {
+		if ( ! self::permalink_is_enabled( 'read' ) ) return self::permalink_disabled( 'Get Category/Tag Slug', 'read' );
 		$term_id  = intval( $params['term_id'] ?? 0 );
 		$taxonomy = sanitize_key( $params['taxonomy'] ?? 'category' );
 
@@ -1559,6 +1586,7 @@ class WMC_Advanced_Abilities {
 	}
 
 	public static function set_term_slug( $params ) {
+		if ( ! self::permalink_is_enabled( 'write' ) ) return self::permalink_disabled( 'Set Category/Tag Slug', 'write' );
 		$term_id  = intval( $params['term_id'] ?? 0 );
 		$new_slug = sanitize_title( $params['slug'] ?? '' );
 		$taxonomy = sanitize_key( $params['taxonomy'] ?? 'category' );

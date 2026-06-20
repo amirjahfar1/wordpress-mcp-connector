@@ -179,6 +179,30 @@ class WMC_Settings {
 					array( 'label' => 'Clear Cache',                  'slug' => 'wmc/clear-cache',                    'desc' => 'Clear WP object cache, transients, W3 Total Cache, WP Rocket, WP Super Cache, LiteSpeed.', 'badge' => 'write', 'key' => array( 'system', 'write' ) ),
 				),
 			),
+			array(
+				'id'    => 'seo_adv',
+				'title' => 'SEO Advanced',
+				'icon'  => '🚀',
+				'abilities' => array(
+					array( 'label' => 'Get / Set / Audit Post SEO',      'slug' => 'wmc/get-post-seo · set-post-seo · get-seo-audit',              'desc' => 'Read full SEO data, update title/description/keyword/canonical/robots, and run SEO health audit with score for any post or page.',           'badge' => 'write', 'key' => array( 'seo_adv', 'meta' ) ),
+					array( 'label' => 'Open Graph & Twitter/X Card',     'slug' => 'wmc/set-open-graph · set-twitter-card',                        'desc' => 'Set Facebook/WhatsApp Open Graph and Twitter/X Card title, description, and image for any post or page.',                                    'badge' => 'write', 'key' => array( 'seo_adv', 'social' ) ),
+					array( 'label' => 'Schema Markup (JSON-LD)',          'slug' => 'wmc/add-schema-markup · get-schema-markup',                    'desc' => 'Add and read JSON-LD schema markup (Article, FAQ, HowTo, Product, LocalBusiness, BreadcrumbList, custom) output in <head>.',               'badge' => 'write', 'key' => array( 'seo_adv', 'schema' ) ),
+					array( 'label' => 'Sitemap Management',               'slug' => 'wmc/get-sitemap-urls · ping-search-engines · exclude-from-sitemap', 'desc' => 'List all sitemap URLs, ping Google & Bing with sitemap, include or exclude specific posts from the XML sitemap.',                   'badge' => 'write', 'key' => array( 'seo_adv', 'sitemap' ) ),
+					array( 'label' => 'Canonical URL & Redirects',        'slug' => 'wmc/set-canonical-url · manage-redirects',                    'desc' => 'Set or clear canonical URL for any post/page, and manage 301/302 redirects (add, list, delete).',                                           'badge' => 'write', 'key' => array( 'seo_adv', 'canonical' ) ),
+					array( 'label' => 'Focus Keywords (Bulk)',             'slug' => 'wmc/set-focus-keyword · bulk-set-focus-keywords',             'desc' => 'Set focus/target keyword for single or multiple posts at once. Works with Rank Math, Yoast, AIOSEO.',                                      'badge' => 'write', 'key' => array( 'seo_adv', 'keywords' ) ),
+					array( 'label' => 'Robots (noindex / nofollow)',       'slug' => 'wmc/set-post-robots · bulk-set-robots',                       'desc' => 'Set noindex, nofollow, noarchive directives for single or multiple posts/pages at once.',                                                   'badge' => 'write', 'key' => array( 'seo_adv', 'robots' ) ),
+					array( 'label' => 'SEO Reports & Audit',              'slug' => 'wmc/seo-overview-report · posts-missing-seo',                  'desc' => 'Full site SEO status report (good/needs improvement/poor) and list of posts missing SEO title, description, or keyword.',                 'badge' => 'read',  'key' => array( 'seo_adv', 'reports' ) ),
+				),
+			),
+			array(
+				'id'    => 'permalinks',
+				'title' => 'Permalinks & Slugs',
+				'icon'  => '🔗',
+				'abilities' => array(
+					array( 'label' => 'Get Permalink Structure / Post Slug / Category Slug / Check Availability', 'slug' => 'wmc/get-permalink-structure · get-post-slug · get-category-slug · check-slug-availability', 'desc' => 'Read current site permalink structure, get the slug of any post/page, get category/tag slug, and check if a slug is already in use.', 'badge' => 'read', 'key' => array( 'permalinks', 'read' ) ),
+					array( 'label' => 'Set Permalink Structure / Post Slug / Category Slug / Flush Rules',        'slug' => 'wmc/set-permalink-structure · set-post-slug · set-category-slug · flush-rewrite-rules',        'desc' => 'Change site-wide permalink structure (plain/postname/day/month/numeric/custom), update any post or category slug, and flush rewrite rules.', 'badge' => 'write', 'key' => array( 'permalinks', 'write' ) ),
+				),
+			),
 		);
 	}
 
@@ -335,7 +359,7 @@ class WMC_Settings {
 				<div class="wmc-stat">
 					<span class="wmc-stat-icon" style="background:#6366f1">⚡</span>
 					<div>
-						<div class="wmc-stat-num">142</div>
+						<div class="wmc-stat-num">168</div>
 						<div class="wmc-stat-label">Total Abilities</div>
 					</div>
 				</div>
@@ -349,7 +373,7 @@ class WMC_Settings {
 				<div class="wmc-stat">
 					<span class="wmc-stat-icon" style="background:#f59e0b">◈</span>
 					<div>
-						<div class="wmc-stat-num">16</div>
+						<div class="wmc-stat-num">18</div>
 						<div class="wmc-stat-label">Categories</div>
 					</div>
 				</div>
@@ -913,6 +937,8 @@ class WMC_Settings {
 			'roles'       => array( 'read' => 1, 'write' => 1 ),
 			'woocommerce' => array( 'read' => 1, 'write' => 1 ),
 			'system'      => array( 'read' => 1, 'write' => 1 ),
+			'seo_adv'     => array( 'meta' => 1, 'social' => 1, 'schema' => 1, 'sitemap' => 1, 'canonical' => 1, 'keywords' => 1, 'robots' => 1, 'reports' => 1 ),
+			'permalinks'  => array( 'read' => 1, 'write' => 1 ),
 		);
 	}
 }
