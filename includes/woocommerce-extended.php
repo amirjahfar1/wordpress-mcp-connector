@@ -105,13 +105,6 @@ class WMC_WooCommerce_Extended {
 			'label'       => 'Get WooCommerce Product Categories',
 			'description' => 'List all product categories with hierarchy',
 			'category'    => 'wp-content-manager',
-			'input_schema' => array(
-				'type' => 'object',
-				'properties' => array(
-					'per_page'  => array( 'type' => 'integer', 'default' => 50 ),
-					'hide_empty' => array( 'type' => 'boolean', 'default' => false ),
-				),
-			),
 			'output_schema'       => array( 'type' => 'object' ),
 			'execute_callback'    => array( self::class, 'get_product_categories' ),
 			'permission_callback' => fn() => self::perm(),
@@ -919,12 +912,6 @@ class WMC_WooCommerce_Extended {
 			'label'       => 'Get WooCommerce Settings',
 			'description' => 'Read WooCommerce settings: currency, tax, checkout, account, email options',
 			'category'    => 'wp-content-manager',
-			'input_schema' => array(
-				'type' => 'object',
-				'properties' => array(
-					'group' => array( 'type' => 'string', 'description' => 'Settings group: general, products, tax, shipping, checkout, account, email', 'default' => 'general' ),
-				),
-			),
 			'output_schema'       => array( 'type' => 'object' ),
 			'execute_callback'    => array( self::class, 'get_woo_settings' ),
 			'permission_callback' => fn() => self::perm(),
@@ -1022,7 +1009,7 @@ class WMC_WooCommerce_Extended {
 		return array( 'success' => true, 'message' => 'Product images updated' );
 	}
 
-	public static function get_product_categories( $input ) {
+	public static function get_product_categories( $input = null ) {
 		if ( $err = self::woo_check() ) return $err;
 		$terms = get_terms( array(
 			'taxonomy'   => 'product_cat',
@@ -1794,7 +1781,7 @@ class WMC_WooCommerce_Extended {
 
 	// ---- SETTINGS ----
 
-	public static function get_woo_settings( $input ) {
+	public static function get_woo_settings( $input = null ) {
 		if ( $err = self::woo_check() ) return $err;
 		$group = sanitize_text_field( $input['group'] ?? 'general' );
 		$map   = array(
