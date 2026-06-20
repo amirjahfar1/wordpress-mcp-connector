@@ -2,6 +2,34 @@
 
 ---
 
+## v3.1.0 — 2026-06-20
+
+### Simplified Connection — No OAuth, No Python Script
+
+Removed all OAuth/token-based auth complexity. Connection now uses WordPress Application Passwords — the native, secure standard built into WordPress 5.6+.
+
+#### What Changed
+
+- **Removed:** OAuth flow, polling system, Python connect scripts (`wmc_connect.py`, `wmc_callback_server.py`)
+- **Removed:** Bearer token authentication filter and custom token endpoints
+- **Added:** Application Password generator built into the Settings page — select a user, click Generate, copy the JSON config, give it to Claude
+- **Added:** Auto-redirect to Settings page immediately after plugin activation
+- **Added:** Step-by-step setup UI with how-to guide directly on the settings page
+- **Improved:** OAuth auth page completely redesigned with dark glassmorphism UI and SVG permission icons
+
+#### New Connection Flow
+
+```
+Install plugin → Settings page opens automatically
+→ Select admin user → Click "Generate"
+→ Copy JSON config → Tell Claude: "Update my MCP config with this"
+→ Restart Claude Code → Connected forever
+```
+
+No username/password to remember. No scripts to run. No OAuth pages. Just generate and paste.
+
+---
+
 ## v3.0.0 — 2026-06-20
 
 ### Major Expansion: WooCommerce Full Control + Developer Toolkit + Product Importer
