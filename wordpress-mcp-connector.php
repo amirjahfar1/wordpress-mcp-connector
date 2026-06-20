@@ -317,3 +317,43 @@ function wmc_deactivate() {
 	// Cleanup if needed
 }
 register_deactivation_hook( __FILE__, 'wmc_deactivate' );
+
+/**
+ * Fix MIME type detection for external images sideloaded via WooCommerce CSV importer
+ * or any media_sideload_image() call. WordPress sometimes can't detect MIME type from
+ * the file extension alone when downloading from external URLs — this filter fills the
+ * gap by mapping common image extensions to their correct MIME types.
+ */
+add_filter( 'wp_check_filetype_and_ext', function( $data, $file, $filename, $mimes, $real_mime ) {
+	if ( ! empty( $data['ext'] ) && ! empty( $data['type'] ) ) {
+		return $data; // already detected — leave it alone
+	}
+
+	$ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+
+	$map = array(
+		'jpg'  => 'image/jpeg',
+		'jpeg' => 'image/jpeg',
+		'png'  => 'image/png',
+		'gif'  => 'image/gif',
+		'webp' => 'image/webp',
+		'avif' => 'image/avif',
+		'svg'  => 'image/svg+xml',
+		'ico'  => 'image/x-icon',
+	);
+
+	if ( isset( $map[ $ext ] ) ) {
+		$data['ext']  = $ext === 'jpg' ? 'jpg' : $ext;
+		$data['type'] = $map[ $ext ];
+	}
+
+	return $data;
+}, 10, 5 );
+
+/**
+ * Increase timeout for downloading external images (WooCommerce CSV importer uses
+ * wp_remote_get under the hood — default 5s is too short for large product images).
+ */
+add_filter( 'http_request_timeout', function( $timeout ) {
+	return max( $timeout, 60 );
+} );
