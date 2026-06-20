@@ -206,6 +206,129 @@ function wmc_register_diagnostic_route() {
 }
 add_action( 'rest_api_init', 'wmc_register_diagnostic_route' );
 
+/**
+ * Auto-Connect Endpoint — POST /wp-json/wmc/v1/connect
+ *
+ * Accepts username + password, validates them, and automatically creates
+ * (or returns existing) an Application Password named "MCP Connector".
+ * This means users never have to manually create Application Passwords.
+ *
+ * Rate-limited to 5 attempts per IP per hour to prevent brute-force.
+ */
+function wmc_register_connect_route() {
+	register_rest_route(
+		'wmc/v1',
+		'/connect',
+		array(
+			'methods'             => 'POST',
+			'callback'            => 'wmc_connect_callback',
+			'permission_callback' => '__return_true', // public — validated inside
+		)
+	);
+}
+add_action( 'rest_api_init', 'wmc_register_connect_route' );
+
+function wmc_connect_callback( WP_REST_Request $request ) {
+	// --- Rate limiting ---
+	$ip          = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+	$rate_key    = 'wmc_connect_attempts_' . md5( $ip );
+	$attempts    = (int) get_transient( $rate_key );
+	if ( $attempts >= 5 ) {
+		return new WP_REST_Response( array(
+			'success' => false,
+			'code'    => 'rate_limited',
+			'message' => 'Too many attempts. Please wait 1 hour before trying again.',
+		), 429 );
+	}
+	set_transient( $rate_key, $attempts + 1, HOUR_IN_SECONDS );
+
+	// --- Get credentials from body ---
+	$username = sanitize_text_field( $request->get_param( 'username' ) );
+	$password = $request->get_param( 'password' ); // do not sanitize — passwords can have special chars
+
+	if ( empty( $username ) || empty( $password ) ) {
+		return new WP_REST_Response( array(
+			'success' => false,
+			'code'    => 'missing_credentials',
+			'message' => 'username and password are required.',
+		), 400 );
+	}
+
+	// --- Authenticate user ---
+	$user = wp_authenticate( $username, $password );
+	if ( is_wp_error( $user ) ) {
+		return new WP_REST_Response( array(
+			'success' => false,
+			'code'    => 'invalid_credentials',
+			'message' => 'Invalid username or password.',
+		), 401 );
+	}
+
+	// --- Must be admin ---
+	if ( ! user_can( $user, 'manage_options' ) ) {
+		return new WP_REST_Response( array(
+			'success' => false,
+			'code'    => 'insufficient_permissions',
+			'message' => 'The provided account does not have administrator permissions.',
+		), 403 );
+	}
+
+	// --- Application Passwords must be available (WP 5.6+) ---
+	if ( ! class_exists( 'WP_Application_Passwords' ) ) {
+		return new WP_REST_Response( array(
+			'success' => false,
+			'code'    => 'app_passwords_unavailable',
+			'message' => 'Application Passwords require WordPress 5.6 or higher.',
+		), 500 );
+	}
+
+	$app_name = 'MCP Connector — Claude';
+
+	// --- Check if one already exists ---
+	$existing = WP_Application_Passwords::get_user_application_passwords( $user->ID );
+	foreach ( $existing as $app_pass ) {
+		if ( $app_pass['name'] === $app_name ) {
+			// Already exists but we cannot retrieve the plain-text password again.
+			// Revoke old one and create fresh so the caller gets usable credentials.
+			WP_Application_Passwords::delete_application_password( $user->ID, $app_pass['uuid'] );
+		}
+	}
+
+	// --- Create new Application Password ---
+	$result = WP_Application_Passwords::create_new_application_password(
+		$user->ID,
+		array( 'name' => $app_name )
+	);
+
+	if ( is_wp_error( $result ) ) {
+		return new WP_REST_Response( array(
+			'success' => false,
+			'code'    => 'creation_failed',
+			'message' => $result->get_error_message(),
+		), 500 );
+	}
+
+	// $result[0] is the plain-text password (only available at creation time)
+	$plain_password = $result[0];
+
+	// Clear rate-limit on success
+	delete_transient( $rate_key );
+
+	return new WP_REST_Response( array(
+		'success'      => true,
+		'message'      => 'Connected successfully. Save the credentials below — the password cannot be retrieved again.',
+		'site_url'     => get_site_url(),
+		'site_name'    => get_bloginfo( 'name' ),
+		'wp_version'   => get_bloginfo( 'version' ),
+		'username'     => $user->user_login,
+		'app_password' => $plain_password,
+		'app_name'     => $app_name,
+		'abilities_endpoint' => get_site_url() . '/wp-json/wp-abilities/v1/abilities',
+		'diagnose_endpoint'  => get_site_url() . '/wp-json/wmc/v1/diagnose',
+		'note'         => 'Use username + app_password for all future MCP API calls (HTTP Basic Auth).',
+	), 200 );
+}
+
 function wmc_diagnose_callback() {
 	global $wp_filter;
 
