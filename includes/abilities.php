@@ -136,6 +136,15 @@ class WMC_Abilities {
 		self::register_roles_abilities();
 		self::register_woocommerce_abilities();
 		self::register_system_abilities();
+		if ( class_exists( 'WMC_WooCommerce_Extended' ) ) {
+			WMC_WooCommerce_Extended::register_all();
+		}
+		if ( class_exists( 'WMC_Advanced_Abilities' ) ) {
+			WMC_Advanced_Abilities::register_all();
+		}
+		if ( class_exists( 'WMC_Import_Abilities' ) ) {
+			WMC_Import_Abilities::register_all();
+		}
 	}
 
 	/**

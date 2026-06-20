@@ -25,6 +25,9 @@ define( 'WMC_VERSION', '2.6.0' );
  */
 require_once WMC_PLUGIN_DIR . 'includes/settings.php';
 require_once WMC_PLUGIN_DIR . 'includes/abilities.php';
+require_once WMC_PLUGIN_DIR . 'includes/woocommerce-extended.php';
+require_once WMC_PLUGIN_DIR . 'includes/advanced-abilities.php';
+require_once WMC_PLUGIN_DIR . 'includes/import-abilities.php';
 
 /**
  * Load bundled MCP Adapter (so no separate plugin needed)
