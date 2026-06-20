@@ -711,7 +711,6 @@ class WMC_WooCommerce_Extended {
 			'label'       => 'Get WooCommerce Shipping Zones',
 			'description' => 'List all shipping zones and their methods',
 			'category'    => 'wp-content-manager',
-			'input_schema' => array( 'type' => 'object', 'properties' => array() ),
 			'output_schema'       => array( 'type' => 'object' ),
 			'execute_callback'    => array( self::class, 'get_shipping_zones' ),
 			'permission_callback' => fn() => self::perm(),
@@ -779,7 +778,6 @@ class WMC_WooCommerce_Extended {
 			'label'       => 'Get WooCommerce Tax Rates',
 			'description' => 'List all tax rates',
 			'category'    => 'wp-content-manager',
-			'input_schema' => array( 'type' => 'object', 'properties' => array() ),
 			'output_schema'       => array( 'type' => 'object' ),
 			'execute_callback'    => array( self::class, 'get_tax_rates' ),
 			'permission_callback' => fn() => self::perm(),
@@ -1588,7 +1586,7 @@ class WMC_WooCommerce_Extended {
 
 	// ---- SHIPPING ----
 
-	public static function get_shipping_zones( $input ) {
+	public static function get_shipping_zones( $input = null ) {
 		if ( $err = self::woo_check() ) return $err;
 		$zones  = WC_Shipping_Zones::get_zones();
 		$result = array();
@@ -1654,7 +1652,7 @@ class WMC_WooCommerce_Extended {
 
 	// ---- TAX ----
 
-	public static function get_tax_rates( $input ) {
+	public static function get_tax_rates( $input = null ) {
 		if ( $err = self::woo_check() ) return $err;
 		global $wpdb;
 		$rates = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}woocommerce_tax_rates ORDER BY tax_rate_priority, tax_rate_order" );
