@@ -2,6 +2,207 @@
 
 ---
 
+## v3.0.0 — 2026-06-20
+
+### Major Expansion: WooCommerce Full Control + Developer Toolkit + Product Importer
+
+This is the biggest release since v1.0. Three completely new modules have been added bringing the total ability count from **63 → 142 abilities**.
+
+---
+
+### 🛒 Module 1: WooCommerce Extended (`includes/woocommerce-extended.php`)
+
+**47 new WooCommerce abilities** — full control over every WooCommerce feature without any REST API keys. All abilities run server-side using WooCommerce PHP classes directly.
+
+#### Products (18 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-product-detail` | Full product details including all meta, gallery, attributes, variations |
+| `wmc/delete-woo-product` | Permanently delete a product |
+| `wmc/set-woo-product-image` | Set or replace the featured image of a product |
+| `wmc/get-woo-product-categories` | List all product categories with counts |
+| `wmc/create-woo-product-category` | Create a new product category (with optional parent) |
+| `wmc/update-woo-product-category` | Update category name, slug, or description |
+| `wmc/delete-woo-product-category` | Delete a product category |
+| `wmc/get-woo-product-tags` | List all product tags |
+| `wmc/create-woo-product-tag` | Create a new product tag |
+| `wmc/delete-woo-product-tag` | Delete a product tag |
+| `wmc/get-woo-product-meta` | Read any custom meta field on a product |
+| `wmc/update-woo-product-meta` | Write any custom meta field on a product |
+| `wmc/create-variable-product` | Create a variable product with attributes and variations |
+| `wmc/get-woo-variations` | List all variations of a variable product |
+| `wmc/update-woo-variation` | Update price, stock, or image of a specific variation |
+| `wmc/delete-woo-variation` | Delete a specific variation |
+| `wmc/assign-woo-product-categories` | Assign/replace categories on a product |
+| `wmc/get-woo-low-stock` | List products below a stock threshold |
+
+#### Orders (7 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-order-detail` | Full order details: line items, billing, shipping, meta |
+| `wmc/add-woo-order-note` | Add a public or private note to an order |
+| `wmc/create-woo-order` | Programmatically create a new order |
+| `wmc/delete-woo-order` | Delete an order permanently |
+| `wmc/create-woo-refund` | Issue a full or partial refund on an order |
+| `wmc/get-woo-order-notes` | List all notes on an order |
+| `wmc/get-woo-customer-detail` | Full customer profile with order history |
+
+#### Coupons (5 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-coupons` | List all coupons |
+| `wmc/create-woo-coupon` | Create a coupon (percent/fixed, expiry, usage limits) |
+| `wmc/update-woo-coupon` | Update an existing coupon |
+| `wmc/delete-woo-coupon` | Delete a coupon |
+| `wmc/get-woo-coupon-usage` | See who used a coupon and when |
+
+#### Reviews (4 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-reviews` | List product reviews with filtering |
+| `wmc/create-woo-review` | Create a product review |
+| `wmc/update-woo-review` | Update or approve/reject a review |
+| `wmc/delete-woo-review` | Delete a review |
+
+#### Shipping (4 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-shipping-zones` | List all shipping zones and their methods |
+| `wmc/create-woo-shipping-zone` | Create a new shipping zone |
+| `wmc/add-woo-shipping-method` | Add a method (flat rate, free shipping, etc.) to a zone |
+| `wmc/delete-woo-shipping-zone` | Delete a shipping zone |
+
+#### Tax (3 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-tax-rates` | List all tax rates |
+| `wmc/create-woo-tax-rate` | Create a tax rate for a country/state |
+| `wmc/delete-woo-tax-rate` | Delete a tax rate |
+
+#### Reports (2 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-sales-report` | Revenue, orders, refunds for today/week/month/year |
+| `wmc/get-woo-top-products` | Best-selling products by quantity or revenue |
+
+#### Customers (2 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/update-woo-customer` | Update any customer field (billing, shipping, meta) |
+| `wmc/get-woo-customer-orders` | All orders placed by a specific customer |
+
+#### WooCommerce Settings (2 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-woo-settings` | Read any WooCommerce settings group (general, products, tax, shipping, checkout, account, email) |
+| `wmc/update-woo-setting` | Update any individual WooCommerce setting by group and key |
+
+---
+
+### 🔧 Module 2: Advanced Developer / Admin / Security (`includes/advanced-abilities.php`)
+
+**29 new abilities** covering server control, file system, SEO, security, and backup — organized in 4 tiers.
+
+#### Tier 1 — Full Server Control (9 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/install-plugin` | Install a plugin from WordPress.org by slug or from a ZIP URL |
+| `wmc/install-theme` | Install a theme from WordPress.org by slug or from a ZIP URL |
+| `wmc/delete-plugin` | Deactivate and permanently delete an installed plugin |
+| `wmc/execute-php` | Execute raw PHP code on the server and return output |
+| `wmc/get-options` | Read wp_options values by key list or partial name search |
+| `wmc/update-option` | Write any value to wp_options directly |
+| `wmc/search-replace-db` | Search & replace text in all database tables — handles serialized data, dry-run mode included |
+| `wmc/get-error-logs` | Read PHP error log, WordPress debug.log, or WooCommerce logs |
+| `wmc/get-server-info` | PHP version, memory, disk space, loaded extensions, WordPress config |
+
+#### Tier 2 — Developer Filesystem (8 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/read-file` | Read any theme or plugin file by path |
+| `wmc/write-file` | Write or overwrite any file (creates file if not exists, append mode available) |
+| `wmc/list-files` | List files in any directory — recursive and extension filter supported |
+| `wmc/run-wp-cli` | Run any WP-CLI command on the server (requires WP-CLI installed) |
+| `wmc/manage-transients` | Get, set, delete, or flush all WordPress transients |
+| `wmc/manage-redirects` | Add, delete, and list 301/302 redirects (enforced automatically via template_redirect) |
+| `wmc/get-post-meta` | Read all custom fields or a specific meta key on any post/page |
+| `wmc/update-post-meta` | Set or delete a custom field on any post/page |
+
+#### Tier 4 — SEO & Performance (6 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/bulk-update-seo` | Bulk update SEO title + description for multiple posts — supports Yoast, Rank Math, AIOSEO, auto-detects active plugin |
+| `wmc/get-broken-links` | Scan post content for internal broken links (404 pages) |
+| `wmc/get-404-logs` | List recent 404 errors — tracked automatically in background |
+| `wmc/manage-robots-txt` | Read or write the robots.txt file |
+| `wmc/manage-htaccess` | Read, write, or append to .htaccess |
+| `wmc/compress-images` | Regenerate WordPress image thumbnails for selected media items |
+
+#### Tier 5 — Security & Backup (6 abilities)
+
+| Ability | Description |
+|---|---|
+| `wmc/get-login-attempts` | List recent failed logins — tracked automatically in background |
+| `wmc/block-ip` | Block or unblock an IP address (enforced automatically on every request) |
+| `wmc/create-backup` | Export database as SQL file or create theme ZIP — saved to `wp-content/uploads/wmc-backups/` |
+| `wmc/list-backups` | List all backup files created by the connector |
+| `wmc/manage-user-sessions` | List, or destroy all/other sessions for any user |
+| `wmc/reset-user-password` | Set a new password for any user — auto-generate mode available |
+
+**Background automation (always active, no ability call needed):**
+- Failed login tracker — every failed login saved to `wmc_failed_logins` option
+- 404 tracker — every 404 saved to `wmc_404_log` option
+- IP blocker — blocked IPs receive `403 Forbidden` on every request
+- Redirect enforcer — managed redirects applied automatically on `template_redirect`
+
+---
+
+### 🌐 Module 3: WooCommerce Product Importer (`includes/import-abilities.php`)
+
+**3 new abilities** to copy products from any public WooCommerce store — including images, prices, categories, descriptions, and tags. No API keys required on either side.
+
+| Ability | Description |
+|---|---|
+| `wmc/preview-woo-import` | Preview products and categories available to import from a source store — nothing is created |
+| `wmc/import-woo-products` | Import products from a WooCommerce store including all images (downloaded to media library), prices, categories, tags, and descriptions |
+| `wmc/import-woo-categories` | Import only the product categories from a source store |
+
+**Import features:**
+- Images are downloaded and stored in your media library (including gallery images)
+- Categories are created automatically if they don't exist
+- Optional price adjustment: increase/decrease by percent or fixed amount
+- Pagination support — import in batches
+- Skip existing products by name to avoid duplicates
+- Products imported as `draft` by default for review before publishing
+- Source URL and original product ID stored in post meta for reference
+
+**How it works:** Uses the WooCommerce Store API (`/wp-json/wc/store/v1/products`) which is publicly accessible on all WooCommerce stores without authentication.
+
+---
+
+### 🔢 Ability Count Summary
+
+| Module | New Abilities | Running Total |
+|---|---|---|
+| v2.5.0 baseline | — | 63 |
+| WooCommerce Extended | +47 | 110 |
+| Advanced (Tier 1–5) | +29 | 139 |
+| Product Importer | +3 | **142** |
+
+---
+
 ## v2.5.0 — 2026-06-12
 
 ### Feature: Modern Card-Based Admin Dashboard
@@ -10,7 +211,7 @@ Complete redesign of the WordPress Admin → MCP Connector settings page:
 
 - **Card UI** — every ability control is shown as its own card with toggle switch, badge, description, and ability slug
 - **Live counters** — active/disabled count updates instantly when toggles are flipped, no page reload needed
-- **Stats bar** — shows Total Abilities (63), Active, Categories (16), Disabled at a glance
+- **Stats bar** — shows Total Abilities, Active, Categories, Disabled at a glance
 - **Section collapse** — every category is collapsible; arrow indicator shows open/closed state
 - **Enable All / Disable All** — global buttons plus per-section All/None buttons
 - **Badge system** — READ-ONLY (blue), WRITE (green), DESTRUCTIVE (red), MODERATE (orange)
@@ -24,7 +225,7 @@ Complete redesign of the WordPress Admin → MCP Connector settings page:
 
 ### Feature: Bulk & Advanced Media Management
 
-**5 new abilities added (total: 63):**
+**5 new abilities added:**
 
 | Ability | Description |
 |---|---|
@@ -34,15 +235,13 @@ Complete redesign of the WordPress Admin → MCP Connector settings page:
 | `wmc/bulk-update-media` | Update alt text, title, description, caption for multiple items in one API call |
 | `wmc/bulk-delete-media` | Delete multiple media items by ID array in one call |
 
-`bulk-update-media` and `bulk-delete-media` return per-item `updated`/`deleted` and `failed` arrays so the caller knows exactly what succeeded.
-
 ---
 
 ## v2.3.0 — 2026-06-12
 
 ### Feature: Plugin Management, User Roles, WooCommerce & System Maintenance
 
-**16 new abilities across 4 new categories (total: 58):**
+**16 new abilities across 4 new categories:**
 
 | Category | Abilities |
 |---|---|
@@ -51,39 +250,18 @@ Complete redesign of the WordPress Admin → MCP Connector settings page:
 | **WooCommerce** | `wmc/get-woo-products`, `wmc/create-woo-product`, `wmc/update-woo-product`, `wmc/get-woo-orders`, `wmc/update-woo-order-status`, `wmc/get-woo-customers` |
 | **System / Maintenance** | `wmc/get-site-health`, `wmc/clear-cache`, `wmc/get-cron-jobs` |
 
-**Admin dashboard:** 4 new sections added with individual read/write toggles. All abilities respect enable/disable state — disabled abilities return a structured error response.
-
-**WooCommerce:** Abilities gracefully return `"WooCommerce is not installed or active"` if the plugin is missing, so registration always succeeds regardless of environment.
-
-**Cache clearing** supports: WordPress object cache, transients, W3 Total Cache, WP Super Cache, WP Rocket, LiteSpeed Cache.
-
 ---
 
 ## v2.2.3 — 2026-05-22
 
 ### Fix: Abilities now correctly register on WP 6.9+
 
-Root cause of zero-abilities issue identified by reading WP core source directly:
-
-1. `wp_register_ability_category()` **must** run on `wp_abilities_api_categories_init`. Called from any other hook it silently returns null. The category was being registered inside `register_all_abilities()` which runs on the later `wp_abilities_api_init` hook — so the category was never in the registry.
-
-2. The abilities registry rejects any ability whose category is not registered. With our category missing, all 42 `wp_register_ability()` calls were silently dropped.
-
-3. The `init` / `abilities_api_init` fallback hooks added in v2.2.1 were actively harmful — `wp_register_ability()` also checks `doing_action()` and returns null outside `wp_abilities_api_init`.
+Root cause identified: `wp_register_ability_category()` must run on `wp_abilities_api_categories_init`. The category was being registered on the wrong hook, causing all 42 ability registrations to be silently dropped.
 
 **Changes:**
 - `wmc_register_category()` now hooked exclusively on `wp_abilities_api_categories_init`
-- `wmc_register_abilities()` hooked exclusively on `wp_abilities_api_init` — fallback hooks removed
-- `register_all_abilities()` no longer calls `register_category()`
-- Diagnostic endpoint extended with `did_wp_abilities_api_categories_init`, `wmc_category_registered`, `fn_wp_has_ability_category`
-
-After upgrading, `GET /wp-json/wmc/v1/diagnose` should show:
-```json
-{
-  "wmc_category_registered": true,
-  "wmc_abilities_count": 42
-}
-```
+- `wmc_register_abilities()` hooked exclusively on `wp_abilities_api_init`
+- Fallback hooks removed
 
 ---
 
@@ -91,16 +269,7 @@ After upgrading, `GET /wp-json/wmc/v1/diagnose` should show:
 
 ### Fix: Corrected ability registration keys
 
-Diagnostic from v2.2.1 revealed the real problem: all `wp_register_ability()` calls were being silently rejected because of wrong array key names.
-
-WP 6.9+ Abilities API expects:
-- `execute_callback` (not `callback`)
-- `meta.show_in_rest = true` (was missing)
-
-**Changes:**
-- Added `WMC_Abilities::wmc_register()` wrapper that defaults `meta.show_in_rest = true`
-- Replaced all 42 ability registrations to use `execute_callback`
-- No behavior changes to any ability
+WP 6.9+ Abilities API expects `execute_callback` (not `callback`) and `meta.show_in_rest = true`. Added `WMC_Abilities::wmc_register()` wrapper that defaults these correctly.
 
 ---
 
@@ -108,56 +277,23 @@ WP 6.9+ Abilities API expects:
 
 ### Fix: Robust abilities registration + diagnostic endpoint
 
-On some WP 6.9.x builds the plugin registered zero abilities despite being active.
-
-**Changes:**
-- Registration callback added on three hooks with idempotency guard: `wp_abilities_api_init`, `abilities_api_init`, `init` priority 20 *(Note: fallbacks later removed in v2.2.3)*
-- Added `GET /wp-json/wmc/v1/diagnose` endpoint (requires `manage_options`) for external inspection of plugin load state, hook status, and registered ability count
+Added `GET /wp-json/wmc/v1/diagnose` endpoint for external inspection of plugin load state.
 
 ---
 
 ## v2.2.0 — 2026-05-21
 
-### Feature: Post & Page Scheduling via `date` field
+### Feature: Post & Page Scheduling
 
-**Affected abilities:** `wmc/create-post`, `wmc/update-post`, `wmc/create-page`, `wmc/update-page`
-
-New optional `date` parameter accepted in all four abilities above.
-
-**Accepted formats:**
-- `"YYYY-MM-DD HH:MM:SS"` — site timezone
-- ISO 8601 (`"2026-06-01T10:00:00"`, with or without timezone offset)
-
-**Behavior:**
-- Future date + `status: publish` → post scheduled (`post_status = future`)
-- Past date → post backdated
-- Invalid date string → structured error response
-
-**Response additions:** `status`, `date`, `scheduled` (boolean) fields in create/update responses.
-
-**Internal:** Added `WMC_Abilities::resolve_schedule()` helper for date parsing and timezone handling. Duplicate-detection queries now include `future` status.
+New optional `date` parameter on `wmc/create-post`, `wmc/update-post`, `wmc/create-page`, `wmc/update-page`. Future date + `status: publish` schedules the post automatically.
 
 ---
 
 ## v2.1.0 — 2026-05-19
 
-### Feature: SEO Meta Fields Support (Yoast, Rank Math, All in One SEO)
+### Feature: SEO Meta Fields (Yoast, Rank Math, All in One SEO)
 
-**4 new abilities:**
-| Ability | Description |
-|---|---|
-| `wmc/get-post-seo-meta` | Read SEO metadata from posts |
-| `wmc/update-post-seo-meta` | Update SEO metadata on posts |
-| `wmc/get-page-seo-meta` | Read SEO metadata from pages |
-| `wmc/update-page-seo-meta` | Update SEO metadata on pages |
-
-**Supported plugins:**
-- Yoast SEO: `_yoast_wpseo_title`, `_yoast_wpseo_metadesc`, `_yoast_wpseo_focuskw`, `_yoast_wpseo_meta-robots-noindex`
-- Rank Math: `rank_math_title`, `rank_math_description`, `rank_math_focus_keyword`, `rank_math_robots`
-- All in One SEO: `_aioseo_title`, `_aioseo_description`, `_aioseo_robots`
-- Fallback: `_meta_title`, `_meta_description` (if no SEO plugin detected)
-
-**Admin panel:** New "SEO Meta Management" section added in WordPress Admin → MCP Connector with read/write toggles.
+4 new abilities: `wmc/get-post-seo-meta`, `wmc/update-post-seo-meta`, `wmc/get-page-seo-meta`, `wmc/update-page-seo-meta`.
 
 ---
 
@@ -165,31 +301,10 @@ New optional `date` parameter accepted in all four abilities above.
 
 ### Feature: Settings, Menus, Widgets & Themes Management
 
-**11 new abilities across 4 categories:**
-
-| Category | Abilities |
-|---|---|
-| **Settings** | `wmc/get-options`, `wmc/update-option` |
-| **Menus** | `wmc/get-menus`, `wmc/create-menu`, `wmc/delete-menu` |
-| **Widgets** | `wmc/get-sidebars`, `wmc/update-widget-option` |
-| **Themes** | `wmc/get-themes`, `wmc/activate-theme`, `wmc/get-theme-mods`, `wmc/update-theme-mod` |
-
-**Admin panel:** All new abilities have individual enable/disable toggles in WordPress Admin → MCP Connector.
-
-**Security:** Settings management only allows whitelisted WordPress options. All operations require `manage_options` capability.
+11 new abilities: options, menus, widgets, themes, theme mods.
 
 ---
 
 ## v1.0.0 — Initial Release
 
-Core WordPress CRUD abilities:
-
-| Category | Abilities |
-|---|---|
-| **Posts** | `wmc/get-posts`, `wmc/create-post`, `wmc/update-post`, `wmc/delete-post` |
-| **Pages** | `wmc/get-pages`, `wmc/create-page`, `wmc/update-page`, `wmc/delete-page` |
-| **Categories** | `wmc/get-categories`, `wmc/create-category`, `wmc/update-category`, `wmc/delete-category` |
-| **Tags** | `wmc/get-tags`, `wmc/create-tag`, `wmc/update-tag`, `wmc/delete-tag` |
-| **Media** | `wmc/get-media`, `wmc/create-media`, `wmc/update-media`, `wmc/delete-media` |
-| **Comments** | `wmc/get-comments`, `wmc/moderate-comment`, `wmc/delete-comment` |
-| **Users** | `wmc/get-users`, `wmc/create-user`, `wmc/update-user`, `wmc/delete-user` |
+Core WordPress CRUD: Posts, Pages, Categories, Tags, Media, Comments, Users.
