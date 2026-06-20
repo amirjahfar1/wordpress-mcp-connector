@@ -229,16 +229,35 @@ class WMC_Settings {
 			<div class="wmc-connect-card" id="wmc-connect-card">
 				<div class="wmc-connect-header">
 					<div class="wmc-connect-title">
-						<span class="wmc-connect-icon">🔑</span>
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><rect width="24" height="24" rx="6" fill="rgba(255,255,255,0.2)"/><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" fill="white"/></svg>
 						<div>
-							<strong>Claude MCP Setup</strong>
-							<div class="wmc-connect-sub">Generate an Application Password to connect Claude Code with your site</div>
+							<strong>Connect Claude Code to Your Site</strong>
+							<div class="wmc-connect-sub">Generate credentials below and give the JSON to Claude — one-time setup, works forever</div>
 						</div>
 					</div>
 					<div class="wmc-connect-status">
 						<span class="wmc-status-dot"></span> WordPress <?php echo esc_html( get_bloginfo('version') ); ?>
 					</div>
 				</div>
+
+				<!-- Quick how-to banner -->
+				<div class="wmc-howto-bar">
+					<div class="wmc-howto-item">
+						<div class="wmc-howto-num">1</div>
+						<div class="wmc-howto-text">Generate password below</div>
+					</div>
+					<div class="wmc-howto-arrow">&#8594;</div>
+					<div class="wmc-howto-item">
+						<div class="wmc-howto-num">2</div>
+						<div class="wmc-howto-text">Copy the JSON config</div>
+					</div>
+					<div class="wmc-howto-arrow">&#8594;</div>
+					<div class="wmc-howto-item">
+						<div class="wmc-howto-num">3</div>
+						<div class="wmc-howto-text">Give to Claude &amp; done!</div>
+					</div>
+				</div>
+
 				<div class="wmc-connect-body">
 
 					<!-- Step 1: Generate -->
@@ -246,7 +265,7 @@ class WMC_Settings {
 						<div class="wmc-step-num">1</div>
 						<div class="wmc-step-content">
 							<div class="wmc-step-title">Generate Application Password</div>
-							<div class="wmc-step-desc">Select an administrator account and click Generate.</div>
+							<div class="wmc-step-desc">Select the admin account you want Claude to use, then click <strong>Generate</strong>.</div>
 							<div class="wmc-gen-row">
 								<select id="wmc-user-select" class="wmc-select">
 									<?php foreach ( $admin_users as $u ) : ?>
@@ -255,7 +274,9 @@ class WMC_Settings {
 										</option>
 									<?php endforeach; ?>
 								</select>
-								<button type="button" class="wmc-copy-btn" onclick="wmcGenPassword()">Generate</button>
+								<button type="button" class="wmc-copy-btn" id="wmc-gen-btn" onclick="wmcGenPassword()">
+									&#9889; Generate
+								</button>
 							</div>
 						</div>
 					</div>
@@ -264,8 +285,7 @@ class WMC_Settings {
 					<div class="wmc-step" id="wmc-creds-step" style="display:none">
 						<div class="wmc-step-num">2</div>
 						<div class="wmc-step-content">
-							<div class="wmc-step-title">Copy your credentials</div>
-							<div class="wmc-step-desc">Save these — the password is shown only once.</div>
+							<div class="wmc-step-title">Your Credentials <span class="wmc-once-badge">Shown only once — save now!</span></div>
 							<div class="wmc-creds-box" id="wmc-creds-box">
 								<div class="wmc-cred-row">
 									<span class="wmc-cred-label">Site URL</span>
@@ -277,28 +297,35 @@ class WMC_Settings {
 								</div>
 								<div class="wmc-cred-row">
 									<span class="wmc-cred-label">App Password</span>
-									<code id="wmc-cred-pass" style="color:#6366f1;font-weight:700">—</code>
+									<code id="wmc-cred-pass" style="color:#6366f1;font-weight:700;letter-spacing:.05em">—</code>
 									<button type="button" class="wmc-copy-inline" onclick="wmcCopyPass()">Copy</button>
 								</div>
 							</div>
 						</div>
 					</div>
 
-					<!-- Step 3: Add to MCP config -->
+					<!-- Step 3: MCP config JSON -->
 					<div class="wmc-step" id="wmc-config-step" style="display:none">
 						<div class="wmc-step-num">3</div>
 						<div class="wmc-step-content">
-							<div class="wmc-step-title">Add to Claude Code MCP config</div>
-							<div class="wmc-step-desc">Copy this and paste into <code>.mcp.json</code> in your project — or give it to Claude and say <em>"update my MCP config with this"</em>.</div>
-							<div class="wmc-token-wrap" style="margin-top:8px">
-								<textarea id="wmc-config-json" class="wmc-token-input wmc-config-textarea" readonly rows="8"></textarea>
-								<button type="button" class="wmc-copy-btn" onclick="wmcCopyConfig()" style="align-self:flex-start">Copy JSON</button>
+							<div class="wmc-step-title">Copy &amp; Give to Claude</div>
+							<div class="wmc-step-desc">
+								Copy this JSON and tell Claude: <em style="color:#6366f1">"Update my MCP config with this"</em> — Claude will connect automatically.
+							</div>
+							<div class="wmc-token-wrap" style="margin-top:10px">
+								<textarea id="wmc-config-json" class="wmc-token-input wmc-config-textarea" readonly rows="9"></textarea>
+								<button type="button" class="wmc-copy-btn" onclick="wmcCopyConfig()" style="align-self:flex-start">
+									&#128203; Copy JSON
+								</button>
+							</div>
+							<div class="wmc-restart-note">
+								&#9432; After Claude updates the config, <strong>restart Claude Code</strong> for the connection to take effect.
 							</div>
 						</div>
 					</div>
 
-					<div class="wmc-token-hint" style="margin-top:4px">
-						&#9432; Application Passwords are managed in <a href="<?php echo esc_url( admin_url('users.php') ); ?>">Users</a>. You can revoke access anytime from a user's profile page.
+					<div class="wmc-token-hint">
+						&#128274; Application Passwords can be revoked anytime from <a href="<?php echo esc_url( admin_url('users.php') ); ?>">Users &rarr; Profile</a>.
 					</div>
 				</div>
 			</div>
@@ -515,6 +542,46 @@ class WMC_Settings {
 		}
 		.wmc-copy-btn:hover { background:#4f46e5; }
 		.wmc-token-hint { font-size:12px; color:#94a3b8; }
+		.wmc-token-hint a { color:#6366f1; }
+
+		/* How-to banner */
+		.wmc-howto-bar {
+			display:flex; align-items:center; justify-content:center; gap:10px;
+			background:#f8f7ff; border-bottom:1px solid #e9d5ff;
+			padding:12px 24px; flex-wrap:wrap;
+		}
+		.wmc-howto-item { display:flex; align-items:center; gap:8px; }
+		.wmc-howto-num {
+			width:24px; height:24px; border-radius:50%;
+			background:#6366f1; color:#fff;
+			font-size:12px; font-weight:700;
+			display:flex; align-items:center; justify-content:center; flex-shrink:0;
+		}
+		.wmc-howto-text { font-size:12.5px; font-weight:600; color:#4c1d95; }
+		.wmc-howto-arrow { color:#c4b5fd; font-size:16px; }
+
+		/* Once badge */
+		.wmc-once-badge {
+			display:inline-block; background:#fef3c7; color:#92400e;
+			font-size:10.5px; font-weight:700; padding:2px 8px;
+			border-radius:4px; margin-left:8px; vertical-align:middle;
+			border:1px solid #fde68a;
+		}
+
+		/* Restart note */
+		.wmc-restart-note {
+			margin-top:10px; font-size:12px; color:#64748b;
+			background:#f8fafc; border:1px solid #e2e8f0;
+			border-radius:8px; padding:10px 14px; line-height:1.6;
+		}
+		.wmc-restart-note strong { color:#334155; }
+
+		/* Generate button pulse on load */
+		#wmc-gen-btn { animation:wmcGenPulse 2s ease-in-out 1s 3; }
+		@keyframes wmcGenPulse {
+			0%,100%{ box-shadow:0 0 0 0 rgba(99,102,241,.4); }
+			50%{ box-shadow:0 0 0 8px rgba(99,102,241,0); }
+		}
 
 		/* ---- Rest of styles ---- */
 		.wmc-wrap {
@@ -751,7 +818,7 @@ class WMC_Settings {
 			// ---- Generate Application Password ----
 			window.wmcGenPassword = function() {
 				var userId = document.getElementById('wmc-user-select').value;
-				var btn = document.querySelector('.wmc-gen-row .wmc-copy-btn');
+				var btn = document.getElementById('wmc-gen-btn');
 				btn.textContent = 'Generating...'; btn.disabled = true;
 
 				fetch('<?php echo esc_js( admin_url('admin-ajax.php') ); ?>', {
@@ -761,8 +828,8 @@ class WMC_Settings {
 				})
 				.then(function(r){ return r.json(); })
 				.then(function(data) {
-					btn.textContent = 'Generate'; btn.disabled = false;
-					if (!data.success) { alert('Error: ' + data.data); return; }
+					btn.disabled = false;
+					if (!data.success) { btn.innerHTML = '&#9889; Generate'; alert('Error: ' + data.data); return; }
 
 					var d = data.data;
 					document.getElementById('wmc-cred-user').textContent = d.username;
@@ -785,8 +852,8 @@ class WMC_Settings {
 
 					document.getElementById('wmc-creds-step').style.display = 'flex';
 					document.getElementById('wmc-config-step').style.display = 'flex';
-					btn.textContent = '&#10003; Regenerate'; btn.style.background = '#10b981';
-					setTimeout(function(){ btn.style.background = ''; btn.textContent = 'Generate'; }, 3000);
+					btn.innerHTML = '&#10003; Done! Regenerate'; btn.style.background = '#10b981';
+					setTimeout(function(){ btn.style.background = ''; btn.innerHTML = '&#9889; Generate'; }, 3000);
 				})
 				.catch(function(){ btn.textContent = 'Generate'; btn.disabled = false; alert('Request failed.'); });
 			};

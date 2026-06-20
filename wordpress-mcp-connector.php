@@ -292,12 +292,23 @@ function wmc_diagnose_callback() {
  * Activation hook
  */
 function wmc_activate() {
-	// Ensure WordPress version supports Abilities API (6.9+)
 	if ( version_compare( get_bloginfo( 'version' ), '6.9', '<' ) ) {
 		wp_die( 'WordPress MCP Connector requires WordPress 6.9 or higher.' );
 	}
+	set_transient( 'wmc_activation_redirect', true, 30 );
 }
 register_activation_hook( __FILE__, 'wmc_activate' );
+
+// Redirect to settings page after activation
+add_action( 'admin_init', function() {
+	if ( get_transient( 'wmc_activation_redirect' ) ) {
+		delete_transient( 'wmc_activation_redirect' );
+		if ( ! isset( $_GET['activate-multi'] ) ) {
+			wp_redirect( admin_url( 'admin.php?page=wmc-settings' ) );
+			exit;
+		}
+	}
+} );
 
 /**
  * Deactivation hook
