@@ -220,52 +220,85 @@ class WMC_Settings {
 				</div>
 			</div>
 
-			<!-- CONNECTION CARD -->
+			<!-- APPLICATION PASSWORD CARD -->
 			<?php
-			$token = get_option( 'wmc_secret_token', '' );
-			if ( empty( $token ) ) {
-				$token = bin2hex( random_bytes( 32 ) );
-				update_option( 'wmc_secret_token', $token, false );
-			}
-			$site_url      = get_site_url();
-			$abilities_url = rest_url( 'wp-abilities/v1/abilities' );
+			$site_url   = get_site_url();
+			$admin_users = get_users( array( 'role' => 'administrator', 'fields' => array( 'ID', 'user_login', 'display_name' ) ) );
+			$gen_nonce   = wp_create_nonce( 'wmc_gen_app_password' );
 			?>
 			<div class="wmc-connect-card" id="wmc-connect-card">
 				<div class="wmc-connect-header">
 					<div class="wmc-connect-title">
-						<span class="wmc-connect-icon">🔗</span>
+						<span class="wmc-connect-icon">🔑</span>
 						<div>
-							<strong>Connect to Claude</strong>
-							<div class="wmc-connect-sub">Copy your Secret Token and give it to Claude — no username or password needed</div>
+							<strong>Claude MCP Setup</strong>
+							<div class="wmc-connect-sub">Generate an Application Password to connect Claude Code with your site</div>
 						</div>
 					</div>
-					<div class="wmc-connect-status" id="wmc-status-pill">
-						<span class="wmc-status-dot"></span> Ready to Connect
+					<div class="wmc-connect-status">
+						<span class="wmc-status-dot"></span> WordPress <?php echo esc_html( get_bloginfo('version') ); ?>
 					</div>
 				</div>
 				<div class="wmc-connect-body">
-					<div class="wmc-token-row">
-						<div class="wmc-token-label">Secret Token</div>
-						<div class="wmc-token-wrap">
-							<input type="text" id="wmc-secret-token" class="wmc-token-input" value="<?php echo esc_attr( $token ); ?>" readonly>
-							<button type="button" class="wmc-copy-btn" onclick="wmcCopyToken()">Copy</button>
-							<button type="button" class="wmc-regen-btn" onclick="wmcRegenToken()" title="Generate new token (will disconnect current sessions)">↺ Regen</button>
+
+					<!-- Step 1: Generate -->
+					<div class="wmc-step">
+						<div class="wmc-step-num">1</div>
+						<div class="wmc-step-content">
+							<div class="wmc-step-title">Generate Application Password</div>
+							<div class="wmc-step-desc">Select an administrator account and click Generate.</div>
+							<div class="wmc-gen-row">
+								<select id="wmc-user-select" class="wmc-select">
+									<?php foreach ( $admin_users as $u ) : ?>
+										<option value="<?php echo esc_attr( $u->ID ); ?>">
+											<?php echo esc_html( $u->display_name . ' (@' . $u->user_login . ')' ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+								<button type="button" class="wmc-copy-btn" onclick="wmcGenPassword()">Generate</button>
+							</div>
 						</div>
-						<div class="wmc-token-hint">This token acts as your API key. Keep it secret. Regenerate if compromised.</div>
 					</div>
-					<div class="wmc-info-grid">
-						<div class="wmc-info-item">
-							<div class="wmc-info-label">Site URL</div>
-							<div class="wmc-info-val"><code><?php echo esc_html( $site_url ); ?></code></div>
-						</div>
-						<div class="wmc-info-item">
-							<div class="wmc-info-label">Abilities Endpoint</div>
-							<div class="wmc-info-val"><code><?php echo esc_html( $abilities_url ); ?></code></div>
+
+					<!-- Step 2: Copy credentials -->
+					<div class="wmc-step" id="wmc-creds-step" style="display:none">
+						<div class="wmc-step-num">2</div>
+						<div class="wmc-step-content">
+							<div class="wmc-step-title">Copy your credentials</div>
+							<div class="wmc-step-desc">Save these — the password is shown only once.</div>
+							<div class="wmc-creds-box" id="wmc-creds-box">
+								<div class="wmc-cred-row">
+									<span class="wmc-cred-label">Site URL</span>
+									<code id="wmc-cred-url"><?php echo esc_html( $site_url ); ?></code>
+								</div>
+								<div class="wmc-cred-row">
+									<span class="wmc-cred-label">Username</span>
+									<code id="wmc-cred-user">—</code>
+								</div>
+								<div class="wmc-cred-row">
+									<span class="wmc-cred-label">App Password</span>
+									<code id="wmc-cred-pass" style="color:#6366f1;font-weight:700">—</code>
+									<button type="button" class="wmc-copy-inline" onclick="wmcCopyPass()">Copy</button>
+								</div>
+							</div>
 						</div>
 					</div>
-					<div class="wmc-how-box">
-						<strong>How to connect:</strong>
-						Tell Claude: <em>"Connect to my WordPress site: <strong><?php echo esc_html( $site_url ); ?></strong> using token: <strong>[paste your token]</strong>"</em>
+
+					<!-- Step 3: Add to MCP config -->
+					<div class="wmc-step" id="wmc-config-step" style="display:none">
+						<div class="wmc-step-num">3</div>
+						<div class="wmc-step-content">
+							<div class="wmc-step-title">Add to Claude Code MCP config</div>
+							<div class="wmc-step-desc">Paste this into your <code>claude_desktop_config.json</code> or Claude Code settings.</div>
+							<div class="wmc-token-wrap" style="margin-top:8px">
+								<textarea id="wmc-config-json" class="wmc-token-input wmc-config-textarea" readonly rows="8"></textarea>
+								<button type="button" class="wmc-copy-btn" onclick="wmcCopyConfig()" style="align-self:flex-start">Copy JSON</button>
+							</div>
+						</div>
+					</div>
+
+					<div class="wmc-token-hint" style="margin-top:4px">
+						&#9432; Application Passwords are managed in <a href="<?php echo esc_url( admin_url('users.php') ); ?>">Users</a>. You can revoke access anytime from a user's profile page.
 					</div>
 				</div>
 			</div>
@@ -418,37 +451,70 @@ class WMC_Settings {
 		}
 		@keyframes wmcPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 
-		.wmc-connect-body { padding:20px 24px; display:flex; flex-direction:column; gap:16px; }
+		.wmc-connect-body { padding:20px 24px; display:flex; flex-direction:column; gap:14px; }
 
-		.wmc-token-row { display:flex; flex-direction:column; gap:6px; }
-		.wmc-token-label { font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
-		.wmc-token-wrap { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+		/* Steps */
+		.wmc-step { display:flex; gap:14px; align-items:flex-start; }
+		.wmc-step-num {
+			width:28px; height:28px; border-radius:50%; flex-shrink:0;
+			background:linear-gradient(135deg,#6366f1,#8b5cf6);
+			color:#fff; font-size:13px; font-weight:700;
+			display:flex; align-items:center; justify-content:center;
+			margin-top:2px;
+		}
+		.wmc-step-content { flex:1; }
+		.wmc-step-title { font-size:14px; font-weight:700; color:#0f172a; margin-bottom:3px; }
+		.wmc-step-desc { font-size:12.5px; color:#64748b; margin-bottom:10px; }
+
+		.wmc-gen-row { display:flex; gap:8px; flex-wrap:wrap; }
+		.wmc-select {
+			flex:1; min-width:180px; padding:9px 12px;
+			border:1.5px solid #e2e8f0; border-radius:8px;
+			font-size:13px; color:#334155; background:#f8fafc; outline:none;
+		}
+		.wmc-select:focus { border-color:#6366f1; background:#fff; }
+
+		/* Creds box */
+		.wmc-creds-box {
+			background:#f8fafc; border:1.5px solid #c7d2fe;
+			border-radius:10px; overflow:hidden;
+		}
+		.wmc-cred-row {
+			display:flex; align-items:center; gap:10px; padding:10px 14px;
+			border-bottom:1px solid #e2e8f0; flex-wrap:wrap;
+		}
+		.wmc-cred-row:last-child { border:none; }
+		.wmc-cred-label { font-size:11.5px; font-weight:700; color:#94a3b8; width:90px; flex-shrink:0; }
+		.wmc-cred-row code { font-size:13px; color:#334155; flex:1; word-break:break-all; background:transparent; }
+		.wmc-copy-inline {
+			padding:4px 12px; border-radius:6px; font-size:11px; font-weight:700;
+			cursor:pointer; border:1px solid #c7d2fe; background:#eef2ff; color:#6366f1;
+			transition:all .15s; white-space:nowrap;
+		}
+		.wmc-copy-inline:hover { background:#6366f1; color:#fff; border-color:#6366f1; }
+
+		/* Config textarea */
+		.wmc-config-textarea {
+			font-family:'SFMono-Regular',Consolas,Menlo,monospace;
+			font-size:12px; line-height:1.6; resize:vertical;
+			width:100%; min-height:160px;
+		}
+
+		/* Shared token/input */
+		.wmc-token-wrap { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; }
 		.wmc-token-input {
 			flex:1; min-width:200px; font-family:monospace; font-size:13px;
 			padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px;
 			background:#f8fafc; color:#334155; outline:none;
 		}
 		.wmc-token-input:focus { border-color:#6366f1; background:#fff; }
-		.wmc-copy-btn, .wmc-regen-btn {
+		.wmc-copy-btn {
 			padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600;
 			cursor:pointer; border:none; transition:all .15s; white-space:nowrap;
+			background:#6366f1; color:#fff;
 		}
-		.wmc-copy-btn { background:#6366f1; color:#fff; }
 		.wmc-copy-btn:hover { background:#4f46e5; }
-		.wmc-regen-btn { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
-		.wmc-regen-btn:hover { background:#fee2e2; color:#ef4444; border-color:#fca5a5; }
 		.wmc-token-hint { font-size:12px; color:#94a3b8; }
-
-		.wmc-info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
-		.wmc-info-item { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; }
-		.wmc-info-label { font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; margin-bottom:5px; }
-		.wmc-info-val code { font-size:12px; color:#334155; word-break:break-all; background:transparent; }
-
-		.wmc-how-box {
-			background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px;
-			padding:14px 16px; font-size:13px; color:#6b21a8; line-height:1.6;
-		}
-		.wmc-how-box strong { color:#4c1d95; }
 
 		/* ---- Rest of styles ---- */
 		.wmc-wrap {
@@ -682,35 +748,73 @@ class WMC_Settings {
 				arrow.classList.toggle('wmc-collapsed', c);
 			};
 
-			// ---- Token copy ----
-			window.wmcCopyToken = function() {
-				var input = document.getElementById('wmc-secret-token');
-				input.select(); input.setSelectionRange(0, 9999);
-				try { document.execCommand('copy'); } catch(e) { navigator.clipboard.writeText(input.value); }
-				var btn = document.querySelector('.wmc-copy-btn');
-				btn.textContent = 'Copied!'; btn.style.background = '#10b981';
-				setTimeout(function(){ btn.textContent = 'Copy'; btn.style.background = ''; }, 2000);
-			};
+			// ---- Generate Application Password ----
+			window.wmcGenPassword = function() {
+				var userId = document.getElementById('wmc-user-select').value;
+				var btn = document.querySelector('.wmc-gen-row .wmc-copy-btn');
+				btn.textContent = 'Generating...'; btn.disabled = true;
 
-			// ---- Token regenerate ----
-			window.wmcRegenToken = function() {
-				if (!confirm('Regenerate token? Any existing Claude connections using the old token will be disconnected.')) return;
-				var btn = document.querySelector('.wmc-regen-btn');
-				btn.textContent = 'Regenerating...'; btn.disabled = true;
-				fetch('<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>', {
+				fetch('<?php echo esc_js( admin_url('admin-ajax.php') ); ?>', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-					body: 'action=wmc_regen_token&nonce=<?php echo esc_js( wp_create_nonce( 'wmc_regen_token' ) ); ?>'
+					body: 'action=wmc_gen_app_password&nonce=<?php echo esc_js( $gen_nonce ); ?>&user_id=' + encodeURIComponent(userId)
 				})
 				.then(function(r){ return r.json(); })
 				.then(function(data) {
-					if (data.success) {
-						document.getElementById('wmc-secret-token').value = data.data.token;
-						btn.textContent = '↺ Regen'; btn.disabled = false;
-					} else {
-						alert('Failed to regenerate token.'); btn.textContent = '↺ Regen'; btn.disabled = false;
-					}
+					btn.textContent = 'Generate'; btn.disabled = false;
+					if (!data.success) { alert('Error: ' + data.data); return; }
+
+					var d = data.data;
+					document.getElementById('wmc-cred-user').textContent = d.username;
+					document.getElementById('wmc-cred-pass').textContent = d.password;
+
+					// Build MCP config JSON
+					var config = {
+						"mcpServers": {
+							"wordpress-mcp": {
+								"command": "npx",
+								"args": [
+									"@wp-mcp/server",
+									"--url", d.site_url,
+									"--username", d.username,
+									"--app-password", d.password
+								]
+							}
+						}
+					};
+					document.getElementById('wmc-config-json').value = JSON.stringify(config, null, 2);
+
+					document.getElementById('wmc-creds-step').style.display = 'flex';
+					document.getElementById('wmc-config-step').style.display = 'flex';
+					btn.textContent = '&#10003; Regenerate'; btn.style.background = '#10b981';
+					setTimeout(function(){ btn.style.background = ''; btn.textContent = 'Generate'; }, 3000);
+				})
+				.catch(function(){ btn.textContent = 'Generate'; btn.disabled = false; alert('Request failed.'); });
+			};
+
+			// ---- Copy application password ----
+			window.wmcCopyPass = function() {
+				var val = document.getElementById('wmc-cred-pass').textContent;
+				navigator.clipboard.writeText(val).catch(function() {
+					var ta = document.createElement('textarea');
+					ta.value = val; document.body.appendChild(ta); ta.select();
+					document.execCommand('copy'); document.body.removeChild(ta);
 				});
+				var btn = document.querySelector('.wmc-copy-inline');
+				btn.textContent = 'Copied!'; btn.style.background = '#10b981'; btn.style.color = '#fff';
+				setTimeout(function(){ btn.textContent = 'Copy'; btn.style.background = ''; btn.style.color = ''; }, 2000);
+			};
+
+			// ---- Copy config JSON ----
+			window.wmcCopyConfig = function() {
+				var val = document.getElementById('wmc-config-json').value;
+				navigator.clipboard.writeText(val).catch(function() {
+					var ta = document.getElementById('wmc-config-json');
+					ta.select(); document.execCommand('copy');
+				});
+				var btn = document.querySelector('#wmc-config-step .wmc-copy-btn');
+				btn.textContent = 'Copied!'; btn.style.background = '#10b981';
+				setTimeout(function(){ btn.textContent = 'Copy JSON'; btn.style.background = ''; }, 2000);
 			};
 		})();
 		</script>

@@ -28,7 +28,6 @@ require_once WMC_PLUGIN_DIR . 'includes/abilities.php';
 require_once WMC_PLUGIN_DIR . 'includes/woocommerce-extended.php';
 require_once WMC_PLUGIN_DIR . 'includes/advanced-abilities.php';
 require_once WMC_PLUGIN_DIR . 'includes/import-abilities.php';
-require_once WMC_PLUGIN_DIR . 'includes/oauth.php';
 
 /**
  * Load bundled MCP Adapter (so no separate plugin needed)
@@ -208,204 +207,48 @@ function wmc_register_diagnostic_route() {
 add_action( 'rest_api_init', 'wmc_register_diagnostic_route' );
 
 /**
- * Auto-Connect Endpoint — POST /wp-json/wmc/v1/connect
- *
- * Accepts username + password, validates them, and automatically creates
- * (or returns existing) an Application Password named "MCP Connector".
- * This means users never have to manually create Application Passwords.
- *
- * Rate-limited to 5 attempts per IP per hour to prevent brute-force.
+ * AJAX: Generate Application Password for MCP (called from admin dashboard)
  */
-function wmc_register_connect_route() {
-	register_rest_route(
-		'wmc/v1',
-		'/connect',
-		array(
-			'methods'             => 'POST',
-			'callback'            => 'wmc_connect_callback',
-			'permission_callback' => '__return_true', // public — validated inside
-		)
-	);
-}
-add_action( 'rest_api_init', 'wmc_register_connect_route' );
+add_action( 'wp_ajax_wmc_gen_app_password', function() {
+	check_ajax_referer( 'wmc_gen_app_password', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Permission denied' );
 
-function wmc_connect_callback( WP_REST_Request $request ) {
-	// --- Rate limiting ---
-	$ip          = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-	$rate_key    = 'wmc_connect_attempts_' . md5( $ip );
-	$attempts    = (int) get_transient( $rate_key );
-	if ( $attempts >= 5 ) {
-		return new WP_REST_Response( array(
-			'success' => false,
-			'code'    => 'rate_limited',
-			'message' => 'Too many attempts. Please wait 1 hour before trying again.',
-		), 429 );
-	}
-	set_transient( $rate_key, $attempts + 1, HOUR_IN_SECONDS );
+	$user_id = intval( $_POST['user_id'] ?? 0 );
+	if ( ! $user_id ) wp_send_json_error( 'Invalid user.' );
 
-	// --- Get credentials from body ---
-	$username = sanitize_text_field( $request->get_param( 'username' ) );
-	$password = $request->get_param( 'password' ); // do not sanitize — passwords can have special chars
-
-	if ( empty( $username ) || empty( $password ) ) {
-		return new WP_REST_Response( array(
-			'success' => false,
-			'code'    => 'missing_credentials',
-			'message' => 'username and password are required.',
-		), 400 );
+	$user = get_user_by( 'ID', $user_id );
+	if ( ! $user || ! user_can( $user, 'manage_options' ) ) {
+		wp_send_json_error( 'User not found or not an administrator.' );
 	}
 
-	// --- Authenticate user ---
-	$user = wp_authenticate( $username, $password );
-	if ( is_wp_error( $user ) ) {
-		return new WP_REST_Response( array(
-			'success' => false,
-			'code'    => 'invalid_credentials',
-			'message' => 'Invalid username or password.',
-		), 401 );
-	}
-
-	// --- Must be admin ---
-	if ( ! user_can( $user, 'manage_options' ) ) {
-		return new WP_REST_Response( array(
-			'success' => false,
-			'code'    => 'insufficient_permissions',
-			'message' => 'The provided account does not have administrator permissions.',
-		), 403 );
-	}
-
-	// --- Application Passwords must be available (WP 5.6+) ---
 	if ( ! class_exists( 'WP_Application_Passwords' ) ) {
-		return new WP_REST_Response( array(
-			'success' => false,
-			'code'    => 'app_passwords_unavailable',
-			'message' => 'Application Passwords require WordPress 5.6 or higher.',
-		), 500 );
+		wp_send_json_error( 'Application Passwords require WordPress 5.6+.' );
 	}
 
-	$app_name = 'MCP Connector — Claude';
+	$app_name = 'Claude MCP Connector';
 
-	// --- Check if one already exists ---
-	$existing = WP_Application_Passwords::get_user_application_passwords( $user->ID );
-	foreach ( $existing as $app_pass ) {
-		if ( $app_pass['name'] === $app_name ) {
-			// Already exists but we cannot retrieve the plain-text password again.
-			// Revoke old one and create fresh so the caller gets usable credentials.
-			WP_Application_Passwords::delete_application_password( $user->ID, $app_pass['uuid'] );
+	// Delete existing password with the same name so we can create fresh
+	$existing = WP_Application_Passwords::get_user_application_passwords( $user_id );
+	foreach ( $existing as $app ) {
+		if ( $app['name'] === $app_name ) {
+			WP_Application_Passwords::delete_application_password( $user_id, $app['uuid'] );
 		}
 	}
 
-	// --- Create new Application Password ---
 	$result = WP_Application_Passwords::create_new_application_password(
-		$user->ID,
+		$user_id,
 		array( 'name' => $app_name )
 	);
 
 	if ( is_wp_error( $result ) ) {
-		return new WP_REST_Response( array(
-			'success' => false,
-			'code'    => 'creation_failed',
-			'message' => $result->get_error_message(),
-		), 500 );
+		wp_send_json_error( $result->get_error_message() );
 	}
 
-	// $result[0] is the plain-text password (only available at creation time)
-	$plain_password = $result[0];
-
-	// Clear rate-limit on success
-	delete_transient( $rate_key );
-
-	return new WP_REST_Response( array(
-		'success'      => true,
-		'message'      => 'Connected successfully. Save the credentials below — the password cannot be retrieved again.',
-		'site_url'     => get_site_url(),
-		'site_name'    => get_bloginfo( 'name' ),
-		'wp_version'   => get_bloginfo( 'version' ),
-		'username'     => $user->user_login,
-		'app_password' => $plain_password,
-		'app_name'     => $app_name,
-		'abilities_endpoint' => get_site_url() . '/wp-json/wp-abilities/v1/abilities',
-		'diagnose_endpoint'  => get_site_url() . '/wp-json/wmc/v1/diagnose',
-		'note'         => 'Use username + app_password for all future MCP API calls (HTTP Basic Auth).',
-	), 200 );
-}
-
-/**
- * Secret Token Authentication
- *
- * Registers a REST authentication handler that accepts the WMC Secret Token
- * (from the admin dashboard) in the Authorization header or as a query param.
- * This means no username or application password is needed — just the token.
- *
- * Header:  Authorization: Bearer YOUR_SECRET_TOKEN
- * Or URL:  ?wmc_token=YOUR_SECRET_TOKEN
- */
-add_filter( 'rest_authentication_errors', 'wmc_token_auth', 5 );
-function wmc_token_auth( $result ) {
-	// If another auth already succeeded/failed, don't interfere
-	if ( ! empty( $result ) ) return $result;
-
-	// Extract token from Authorization header or query string
-	$token = '';
-	$header = $_SERVER['HTTP_AUTHORIZATION'] ?? ( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '' );
-	if ( $header && stripos( $header, 'Bearer ' ) === 0 ) {
-		$token = trim( substr( $header, 7 ) );
-	}
-	if ( empty( $token ) && ! empty( $_REQUEST['wmc_token'] ) ) {
-		$token = sanitize_text_field( $_REQUEST['wmc_token'] );
-	}
-	if ( empty( $token ) ) return $result; // not a token-based request — let WP handle normally
-
-	// Validate token
-	$stored = get_option( 'wmc_secret_token', '' );
-	if ( empty( $stored ) || ! hash_equals( $stored, $token ) ) {
-		return new WP_Error( 'wmc_invalid_token', 'Invalid or missing WMC secret token.', array( 'status' => 401 ) );
-	}
-
-	// Token valid — authenticate as the site owner (first admin user)
-	$admins = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ids' ) );
-	if ( empty( $admins ) ) return new WP_Error( 'wmc_no_admin', 'No administrator found.', array( 'status' => 500 ) );
-
-	wp_set_current_user( $admins[0] );
-	return true;
-}
-
-/**
- * Token info endpoint — GET /wp-json/wmc/v1/token-info
- * Returns site info when authenticated with the secret token.
- * Used by Claude to verify the connection is working.
- */
-add_action( 'rest_api_init', function() {
-	register_rest_route( 'wmc/v1', '/token-info', array(
-		'methods'             => 'GET',
-		'callback'            => function() {
-			return array(
-				'success'            => true,
-				'connected'          => true,
-				'site_url'           => get_site_url(),
-				'site_name'          => get_bloginfo( 'name' ),
-				'wp_version'         => get_bloginfo( 'version' ),
-				'plugin_version'     => WMC_VERSION,
-				'abilities_endpoint' => rest_url( 'wp-abilities/v1/abilities' ),
-				'abilities_count'    => function_exists( 'wp_get_abilities' ) ? count( wp_get_abilities() ) : null,
-				'message'            => 'Connection successful! WordPress MCP Connector is active.',
-			);
-		},
-		'permission_callback' => function() {
-			return current_user_can( 'manage_options' );
-		},
+	wp_send_json_success( array(
+		'password' => $result[0], // plain text only available at creation
+		'username' => $user->user_login,
+		'site_url' => get_site_url(),
 	) );
-} );
-
-/**
- * AJAX: Regenerate secret token (called from admin dashboard)
- */
-add_action( 'wp_ajax_wmc_regen_token', function() {
-	check_ajax_referer( 'wmc_regen_token', 'nonce' );
-	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Permission denied' );
-	$new_token = bin2hex( random_bytes( 32 ) );
-	update_option( 'wmc_secret_token', $new_token, false );
-	wp_send_json_success( array( 'token' => $new_token ) );
 } );
 
 function wmc_diagnose_callback() {
