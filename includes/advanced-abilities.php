@@ -30,6 +30,7 @@ class WMC_Advanced_Abilities {
 		self::register_tier2();
 		self::register_tier4();
 		self::register_tier5();
+		self::register_permalink_abilities();
 	}
 
 	// ================================================================
@@ -1250,6 +1251,347 @@ class WMC_Advanced_Abilities {
 			'message'       => 'Password reset successfully',
 		);
 	}
+
+	// ================================================================
+	//  PERMALINK & SLUG ABILITIES
+	// ================================================================
+
+	public static function register_permalink_abilities() {
+
+		// ---------- get-permalink-structure ----------
+		self::register( 'wmc/get-permalink-structure', array(
+			'label'               => 'Get Permalink Structure',
+			'description'         => 'Get the current site-wide permalink structure setting',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'get_permalink_structure' ),
+			'permission_callback' => fn() => self::admin(),
+		) );
+
+		// ---------- set-permalink-structure ----------
+		self::register( 'wmc/set-permalink-structure', array(
+			'label'               => 'Set Permalink Structure',
+			'description'         => 'Change the site-wide permalink structure. Flushes rewrite rules automatically.',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array(
+				'type'       => 'object',
+				'properties' => array(
+					'structure' => array(
+						'type'        => 'string',
+						'description' => 'Permalink structure tag or a common preset name: "plain", "day", "month", "numeric", "postname", "custom". For custom pass a WP structure tag like "/%category%/%postname%/".',
+					),
+				),
+				'required' => array( 'structure' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'set_permalink_structure' ),
+			'permission_callback' => fn() => self::admin(),
+		) );
+
+		// ---------- flush-rewrite-rules ----------
+		self::register( 'wmc/flush-rewrite-rules', array(
+			'label'               => 'Flush Rewrite Rules',
+			'description'         => 'Flush WordPress rewrite rules (same as saving Permalinks settings page)',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'flush_rewrite_rules_ability' ),
+			'permission_callback' => fn() => self::admin(),
+		) );
+
+		// ---------- get-post-slug ----------
+		self::register( 'wmc/get-post-slug', array(
+			'label'               => 'Get Post/Page Slug',
+			'description'         => 'Get the current slug (URL name) of a post or page',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array(
+				'type'       => 'object',
+				'properties' => array(
+					'post_id' => array( 'type' => 'integer', 'description' => 'Post or page ID' ),
+				),
+				'required' => array( 'post_id' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'get_post_slug' ),
+			'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+		) );
+
+		// ---------- set-post-slug ----------
+		self::register( 'wmc/set-post-slug', array(
+			'label'               => 'Set Post/Page Slug',
+			'description'         => 'Change the slug (URL name) of a post or page',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array(
+				'type'       => 'object',
+				'properties' => array(
+					'post_id' => array( 'type' => 'integer', 'description' => 'Post or page ID' ),
+					'slug'    => array( 'type' => 'string', 'description' => 'New slug (URL-safe, lowercase, hyphens allowed). Leave empty to auto-generate from post title.' ),
+				),
+				'required' => array( 'post_id' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'set_post_slug' ),
+			'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+		) );
+
+		// ---------- check-slug-availability ----------
+		self::register( 'wmc/check-slug-availability', array(
+			'label'               => 'Check Slug Availability',
+			'description'         => 'Check if a slug is already in use on this site',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array(
+				'type'       => 'object',
+				'properties' => array(
+					'slug'      => array( 'type' => 'string', 'description' => 'Slug to check' ),
+					'post_type' => array( 'type' => 'string', 'description' => 'Post type to check against (default: post)', 'default' => 'post' ),
+					'exclude_id'=> array( 'type' => 'integer', 'description' => 'Exclude this post ID from the check (useful when editing existing post)' ),
+				),
+				'required' => array( 'slug' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'check_slug_availability' ),
+			'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+		) );
+
+		// ---------- get-category-slug ----------
+		self::register( 'wmc/get-category-slug', array(
+			'label'               => 'Get Category/Tag Slug',
+			'description'         => 'Get the slug of a category, tag, or custom taxonomy term',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array(
+				'type'       => 'object',
+				'properties' => array(
+					'term_id'  => array( 'type' => 'integer', 'description' => 'Term ID' ),
+					'taxonomy' => array( 'type' => 'string', 'description' => 'Taxonomy name (default: category)', 'default' => 'category' ),
+				),
+				'required' => array( 'term_id' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'get_term_slug' ),
+			'permission_callback' => fn() => current_user_can( 'manage_categories' ),
+		) );
+
+		// ---------- set-category-slug ----------
+		self::register( 'wmc/set-category-slug', array(
+			'label'               => 'Set Category/Tag Slug',
+			'description'         => 'Change the slug of a category, tag, or custom taxonomy term',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array(
+				'type'       => 'object',
+				'properties' => array(
+					'term_id'  => array( 'type' => 'integer', 'description' => 'Term ID' ),
+					'slug'     => array( 'type' => 'string', 'description' => 'New slug' ),
+					'taxonomy' => array( 'type' => 'string', 'description' => 'Taxonomy name (default: category)', 'default' => 'category' ),
+				),
+				'required' => array( 'term_id', 'slug' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'set_term_slug' ),
+			'permission_callback' => fn() => current_user_can( 'manage_categories' ),
+		) );
+	}
+
+	// ----------------------------------------------------------------
+	//  PERMALINK CALLBACKS
+	// ----------------------------------------------------------------
+
+	public static function get_permalink_structure() {
+		$structure = get_option( 'permalink_structure' );
+		$presets = array(
+			''                    => 'plain',
+			'/%year%/%monthnum%/%day%/%postname%/' => 'day',
+			'/%year%/%monthnum%/%postname%/'       => 'month',
+			'/archives/%post_id%'                  => 'numeric',
+			'/%postname%/'                         => 'postname',
+		);
+		$preset = isset( $presets[ $structure ] ) ? $presets[ $structure ] : 'custom';
+
+		return array(
+			'success'           => true,
+			'structure'         => $structure,
+			'preset'            => $preset,
+			'category_base'     => get_option( 'category_base' ),
+			'tag_base'          => get_option( 'tag_base' ),
+			'sample_post_url'   => get_permalink( get_option( 'page_on_front' ) ?: 1 ) ?: get_home_url(),
+		);
+	}
+
+	public static function set_permalink_structure( $params ) {
+		$input = $params['structure'] ?? '';
+
+		$presets = array(
+			'plain'    => '',
+			'day'      => '/%year%/%monthnum%/%day%/%postname%/',
+			'month'    => '/%year%/%monthnum%/%postname%/',
+			'numeric'  => '/archives/%post_id%',
+			'postname' => '/%postname%/',
+		);
+
+		if ( isset( $presets[ $input ] ) ) {
+			$structure = $presets[ $input ];
+		} else {
+			$structure = $input;
+		}
+
+		global $wp_rewrite;
+		$wp_rewrite->set_permalink_structure( $structure );
+		$wp_rewrite->flush_rules();
+
+		return array(
+			'success'   => true,
+			'structure' => $structure,
+			'message'   => 'Permalink structure updated and rewrite rules flushed.',
+		);
+	}
+
+	public static function flush_rewrite_rules_ability() {
+		flush_rewrite_rules( true );
+		return array(
+			'success' => true,
+			'message' => 'Rewrite rules flushed successfully.',
+		);
+	}
+
+	public static function get_post_slug( $params ) {
+		$post_id = intval( $params['post_id'] ?? 0 );
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			return array( 'success' => false, 'message' => 'Post not found.' );
+		}
+		return array(
+			'success'   => true,
+			'post_id'   => $post_id,
+			'slug'      => $post->post_name,
+			'permalink' => get_permalink( $post_id ),
+			'title'     => $post->post_title,
+			'post_type' => $post->post_type,
+			'status'    => $post->post_status,
+		);
+	}
+
+	public static function set_post_slug( $params ) {
+		$post_id  = intval( $params['post_id'] ?? 0 );
+		$new_slug = sanitize_title( $params['slug'] ?? '' );
+
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			return array( 'success' => false, 'message' => 'Post not found.' );
+		}
+
+		if ( empty( $new_slug ) ) {
+			$new_slug = sanitize_title( $post->post_title );
+		}
+
+		$old_slug = $post->post_name;
+
+		$result = wp_update_post( array(
+			'ID'        => $post_id,
+			'post_name' => $new_slug,
+		), true );
+
+		if ( is_wp_error( $result ) ) {
+			return array( 'success' => false, 'message' => $result->get_error_message() );
+		}
+
+		$final_slug = get_post( $post_id )->post_name;
+
+		return array(
+			'success'    => true,
+			'post_id'    => $post_id,
+			'old_slug'   => $old_slug,
+			'new_slug'   => $final_slug,
+			'permalink'  => get_permalink( $post_id ),
+			'message'    => 'Slug updated successfully.',
+		);
+	}
+
+	public static function check_slug_availability( $params ) {
+		$slug       = sanitize_title( $params['slug'] ?? '' );
+		$post_type  = sanitize_key( $params['post_type'] ?? 'post' );
+		$exclude_id = intval( $params['exclude_id'] ?? 0 );
+
+		if ( empty( $slug ) ) {
+			return array( 'success' => false, 'message' => 'Slug cannot be empty.' );
+		}
+
+		$args = array(
+			'name'           => $slug,
+			'post_type'      => $post_type,
+			'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+		);
+		if ( $exclude_id ) {
+			$args['post__not_in'] = array( $exclude_id );
+		}
+
+		$posts = get_posts( $args );
+		$available = empty( $posts );
+
+		return array(
+			'success'     => true,
+			'slug'        => $slug,
+			'available'   => $available,
+			'post_type'   => $post_type,
+			'message'     => $available ? 'Slug is available.' : 'Slug is already in use.',
+			'used_by_id'  => ! $available ? $posts[0] : null,
+		);
+	}
+
+	public static function get_term_slug( $params ) {
+		$term_id  = intval( $params['term_id'] ?? 0 );
+		$taxonomy = sanitize_key( $params['taxonomy'] ?? 'category' );
+
+		$term = get_term( $term_id, $taxonomy );
+		if ( is_wp_error( $term ) || ! $term ) {
+			return array( 'success' => false, 'message' => 'Term not found.' );
+		}
+
+		return array(
+			'success'  => true,
+			'term_id'  => $term_id,
+			'taxonomy' => $taxonomy,
+			'name'     => $term->name,
+			'slug'     => $term->slug,
+			'url'      => get_term_link( $term ),
+		);
+	}
+
+	public static function set_term_slug( $params ) {
+		$term_id  = intval( $params['term_id'] ?? 0 );
+		$new_slug = sanitize_title( $params['slug'] ?? '' );
+		$taxonomy = sanitize_key( $params['taxonomy'] ?? 'category' );
+
+		if ( empty( $new_slug ) ) {
+			return array( 'success' => false, 'message' => 'Slug cannot be empty.' );
+		}
+
+		$term = get_term( $term_id, $taxonomy );
+		if ( is_wp_error( $term ) || ! $term ) {
+			return array( 'success' => false, 'message' => 'Term not found.' );
+		}
+
+		$old_slug = $term->slug;
+
+		$result = wp_update_term( $term_id, $taxonomy, array( 'slug' => $new_slug ) );
+
+		if ( is_wp_error( $result ) ) {
+			return array( 'success' => false, 'message' => $result->get_error_message() );
+		}
+
+		$updated = get_term( $term_id, $taxonomy );
+
+		return array(
+			'success'  => true,
+			'term_id'  => $term_id,
+			'taxonomy' => $taxonomy,
+			'old_slug' => $old_slug,
+			'new_slug' => $updated->slug,
+			'url'      => get_term_link( $updated ),
+			'message'  => 'Term slug updated successfully.',
+		);
+	}
 }
 
 // ================================================================
@@ -1309,3 +1651,4 @@ add_action( 'init', function() {
 		wp_die( 'Access denied. Your IP has been blocked.', 'Forbidden', array( 'response' => 403 ) );
 	}
 }, 1 );
+

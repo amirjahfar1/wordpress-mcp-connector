@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://nextbrainsolutions.com
- * Description: Exposes 142 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, SEO, security, backups, and product importing from other WooCommerce stores.
- * Version: 3.2.0
+ * Description: Exposes 168 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, advanced SEO (meta, Open Graph, Twitter Card, Schema, Sitemap, Redirects, Robots), security, backups, permalink/slug management, and product importing from other WooCommerce stores.
+ * Version: 3.4.0
  * Author: Amir Ali
  * Author URI: https://nextbrainsolutions.com
  * License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'WMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WMC_VERSION', '3.2.0' );
+define( 'WMC_VERSION', '3.4.0' );
 
 /**
  * Load the abilities and settings files
@@ -28,6 +28,7 @@ require_once WMC_PLUGIN_DIR . 'includes/abilities.php';
 require_once WMC_PLUGIN_DIR . 'includes/woocommerce-extended.php';
 require_once WMC_PLUGIN_DIR . 'includes/advanced-abilities.php';
 require_once WMC_PLUGIN_DIR . 'includes/import-abilities.php';
+require_once WMC_PLUGIN_DIR . 'includes/seo-abilities.php';
 
 /**
  * Load bundled MCP Adapter (so no separate plugin needed)
@@ -181,6 +182,9 @@ add_action( 'wp_abilities_api_categories_init', 'wmc_register_category' );
 function wmc_register_abilities() {
 	if ( class_exists( 'WMC_Abilities' ) ) {
 		WMC_Abilities::register_all_abilities();
+	}
+	if ( class_exists( 'WMC_SEO_Abilities' ) ) {
+		WMC_SEO_Abilities::register_all();
 	}
 }
 add_action( 'wp_abilities_api_init', 'wmc_register_abilities' );
