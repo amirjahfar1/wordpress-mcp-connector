@@ -1416,7 +1416,7 @@ class WMC_Advanced_Abilities {
 		return true;
 	}
 
-	public static function get_permalink_structure() {
+	public static function get_permalink_structure( $params = array() ) {
 		if ( ! self::permalink_is_enabled( 'read' ) ) return self::permalink_disabled( 'Get Permalink Structure', 'read' );
 		$structure = get_option( 'permalink_structure' );
 		$presets = array(
@@ -1467,7 +1467,7 @@ class WMC_Advanced_Abilities {
 		);
 	}
 
-	public static function flush_rewrite_rules_ability() {
+	public static function flush_rewrite_rules_ability( $params = array() ) {
 		if ( ! self::permalink_is_enabled( 'write' ) ) return self::permalink_disabled( 'Flush Rewrite Rules', 'write' );
 		flush_rewrite_rules( true );
 		return array(
