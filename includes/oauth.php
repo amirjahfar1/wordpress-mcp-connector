@@ -174,93 +174,251 @@ function wmc_oauth_revoke() {
 function wmc_oauth_render_auth_page( $state ) {
 	$site_name = get_bloginfo( 'name' );
 	$site_url  = get_site_url();
-	$site_icon = get_site_icon_url( 64 );
+	$site_icon = get_site_icon_url( 80 );
+	$display_url = preg_replace('#^https?://#', '', rtrim( $site_url, '/' ) );
 	$user      = wp_get_current_user();
 	$nonce     = wp_create_nonce( 'wmc_oauth_' . $state );
 	$post_url  = add_query_arg( array( 'wmc_oauth' => '1', 'state' => urlencode( $state ) ), home_url( '/' ) );
 	?><!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Authorize Claude — <?php echo esc_html( $site_name ); ?></title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Authorize Claude &#8212; <?php echo esc_html( $site_name ); ?></title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border-radius:24px;box-shadow:0 30px 70px rgba(0,0,0,.22);max-width:440px;width:100%;overflow:hidden}
-.card-top{background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:36px 32px 28px;text-align:center;color:#fff}
-.logos{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px}
-.logo-box{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid rgba(255,255,255,.3);overflow:hidden}
-.logo-box img{width:100%;height:100%;object-fit:cover}
-.card-top h1{font-size:22px;font-weight:800;margin-bottom:6px}
-.card-top p{font-size:14px;opacity:.85}
-.card-body{padding:24px 32px}
-.site-info{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin-bottom:18px}
-.sr{display:flex;gap:10px;align-items:center;padding:4px 0}
-.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.lbl{font-size:12px;color:#94a3b8;width:55px;flex-shrink:0}
-.val{font-size:13px;color:#334155;font-weight:500;word-break:break-all}
-.perms{margin-bottom:18px}
-.perms h3{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
-.perm{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f1f5f9}
-.perm:last-child{border:none}
-.pi{font-size:17px;flex-shrink:0}
-.pt{font-size:13px;color:#475569;line-height:1.4}
-.pt strong{color:#1e293b}
-.user-row{display:flex;align-items:center;gap:10px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:12px 14px;margin-bottom:18px}
-.avatar{width:36px;height:36px;border-radius:50%;border:2px solid #c4b5fd}
-.uinfo strong{display:block;font-size:13px;color:#4c1d95}
-.uinfo span{font-size:12px;color:#7c3aed}
-.btn-row{display:flex;gap:10px}
-.btn{flex:1;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
-.btn-allow{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
-.btn-allow:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.4)}
-.btn-deny{background:#f1f5f9;color:#64748b}
-.btn-deny:hover{background:#fee2e2;color:#ef4444}
-.footer{padding:14px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8}
-.footer a{color:#6366f1;text-decoration:none}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif;
+  background:#0f0f1a;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(99,102,241,.35) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 100%,rgba(139,92,246,.2) 0%,transparent 55%);
+  pointer-events:none;
+}
+
+.card{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;
+  box-shadow:0 40px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08);
+  max-width:420px;width:100%;
+  backdrop-filter:blur(20px);
+  animation:rise .5s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* ── Header ── */
+.hd{padding:32px 32px 24px;text-align:center}
+.logos{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:22px}
+.logo{
+  width:52px;height:52px;border-radius:14px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.logo img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.logo svg{width:28px;height:28px}
+.arrow{display:flex;align-items:center;gap:5px;opacity:.4}
+.arrow span{width:6px;height:6px;border-radius:50%;background:#a5b4fc}
+.arrow line-seg{width:28px;height:1.5px;background:rgba(165,180,252,.4);border-radius:2px;display:block}
+.hd h1{font-size:20px;font-weight:700;color:#f1f5f9;letter-spacing:-.3px;margin-bottom:5px}
+.hd p{font-size:13.5px;color:#94a3b8}
+.hd p strong{color:#c4b5fd}
+
+/* ── Info strip ── */
+.strip{
+  margin:0 20px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:4px 0;
+}
+.row{display:flex;align-items:center;gap:12px;padding:9px 16px}
+.row+.row{border-top:1px solid rgba(255,255,255,.05)}
+.rdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rlbl{font-size:11.5px;color:#64748b;width:52px;flex-shrink:0;font-weight:500}
+.rval{font-size:12.5px;color:#cbd5e1;font-weight:500;word-break:break-all}
+
+/* ── Permissions ── */
+.perms{padding:20px 20px 0}
+.perms-hd{font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-left:4px}
+.perm{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 14px;border-radius:10px;margin-bottom:4px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  transition:background .15s;
+}
+.perm:hover{background:rgba(99,102,241,.08)}
+.perm-icon{
+  width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.perm-icon svg{width:15px;height:15px}
+.perm-text{padding-top:1px}
+.perm-text strong{display:block;font-size:12.5px;color:#e2e8f0;font-weight:600;margin-bottom:2px}
+.perm-text span{font-size:11.5px;color:#64748b;line-height:1.4}
+
+/* ── User row ── */
+.user-row{
+  display:flex;align-items:center;gap:12px;
+  margin:16px 20px 0;
+  padding:11px 14px;
+  background:rgba(139,92,246,.08);
+  border:1px solid rgba(139,92,246,.2);
+  border-radius:10px;
+}
+.avatar{width:34px;height:34px;border-radius:50%;border:2px solid rgba(196,181,253,.4)}
+.uinfo strong{display:block;font-size:12.5px;color:#ddd6fe;font-weight:600}
+.uinfo span{font-size:11.5px;color:#7c6fba}
+
+/* ── Buttons ── */
+.btns{display:flex;gap:8px;padding:20px}
+.btn{
+  flex:1;padding:13px 0;border-radius:10px;
+  font-size:13.5px;font-weight:700;cursor:pointer;border:none;
+  transition:all .15s;letter-spacing:-.1px;
+}
+.btn-allow{
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;box-shadow:0 4px 16px rgba(99,102,241,.4);
+}
+.btn-allow:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(99,102,241,.5)}
+.btn-allow:active{transform:none;box-shadow:0 2px 8px rgba(99,102,241,.3)}
+.btn-deny{
+  background:rgba(255,255,255,.05);
+  color:#64748b;border:1px solid rgba(255,255,255,.08);
+}
+.btn-deny:hover{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2)}
+
+/* ── Footer ── */
+.foot{
+  border-top:1px solid rgba(255,255,255,.06);
+  padding:12px 20px;text-align:center;
+  font-size:11px;color:#374151;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.foot svg{opacity:.5}
+.foot a{color:#6366f1;text-decoration:none;font-weight:500}
+.foot a:hover{color:#818cf8}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="card-top">
+
+  <div class="hd">
     <div class="logos">
-      <div class="logo-box">&#129302;</div>
-      <div style="font-size:22px;opacity:.7">&#8606;</div>
-      <div class="logo-box"><?php echo $site_icon ? '<img src="' . esc_url( $site_icon ) . '" alt="">' : '&#127760;'; ?></div>
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="24" height="24" rx="6" fill="#CC785C"/>
+          <path d="M12 4C7.582 4 4 7.582 4 12C4 16.418 7.582 20 12 20C16.418 20 20 16.418 20 12C20 7.582 16.418 4 12 4ZM12 7.5C13.38 7.5 14.5 8.62 14.5 10C14.5 11.38 13.38 12.5 12 12.5C10.62 12.5 9.5 11.38 9.5 10C9.5 8.62 10.62 7.5 12 7.5ZM12 17.5C10.07 17.5 8.36 16.57 7.28 15.13C7.31 13.65 10.33 12.85 12 12.85C13.66 12.85 16.69 13.65 16.72 15.13C15.64 16.57 13.93 17.5 12 17.5Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="arrow">
+        <span></span>
+        <line-seg></line-seg>
+        <svg width="16" height="10" viewBox="0 0 16 10" fill="none"><path d="M1 5H15M15 5L11 1M15 5L11 9" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 5H15M15 5L11 1M15 5L11 9" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="scale(-1,1) translate(-16,0)"/></svg>
+        <line-seg></line-seg>
+        <span></span>
+      </div>
+      <div class="logo">
+        <?php if ( $site_icon ) : ?>
+          <img src="<?php echo esc_url( $site_icon ); ?>" alt="<?php echo esc_attr( $site_name ); ?>">
+        <?php else : ?>
+          <svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#1e293b"/><path d="M12 3C7.032 3 3 7.032 3 12C3 16.968 7.032 21 12 21C16.968 21 21 16.968 21 12C21 7.032 16.968 3 12 3ZM4.68 12.744L11.256 19.32C7.632 18.948 4.752 16.212 4.68 12.744ZM12.744 19.32L19.32 12.744C19.248 16.212 16.368 18.948 12.744 19.32ZM12 4.68C14.868 4.68 17.412 6.012 19.044 8.1H4.956C6.588 6.012 9.132 4.68 12 4.68ZM4.5 9.78H19.5C19.788 10.5 19.956 11.232 19.956 12C19.956 12.408 19.908 12.804 19.848 13.2H4.152C4.092 12.804 4.044 12.408 4.044 12C4.044 11.232 4.212 10.5 4.5 9.78Z" fill="#6366f1"/></svg>
+        <?php endif; ?>
+      </div>
     </div>
     <h1>Claude wants to connect</h1>
-    <p>to <strong><?php echo esc_html( $site_name ); ?></strong></p>
+    <p>Requesting access to <strong><?php echo esc_html( $site_name ); ?></strong></p>
   </div>
-  <div class="card-body">
-    <div class="site-info">
-      <div class="sr"><div class="dot" style="background:#10b981"></div><div class="lbl">Site</div><div class="val"><?php echo esc_html( $site_name ); ?></div></div>
-      <div class="sr"><div class="dot" style="background:#6366f1"></div><div class="lbl">URL</div><div class="val"><?php echo esc_html( $site_url ); ?></div></div>
-      <div class="sr"><div class="dot" style="background:#f59e0b"></div><div class="lbl">Plugin</div><div class="val">WP MCP Connector v<?php echo WMC_VERSION; ?></div></div>
+
+  <div class="strip">
+    <div class="row">
+      <div class="rdot" style="background:#22c55e"></div>
+      <div class="rlbl">Site</div>
+      <div class="rval"><?php echo esc_html( $site_name ); ?></div>
     </div>
-    <div class="perms">
-      <h3>Claude will be able to</h3>
-      <div class="perm"><div class="pi">&#128221;</div><div class="pt"><strong>Read &amp; manage content</strong> — posts, pages, media, comments</div></div>
-      <div class="perm"><div class="pi">&#128722;</div><div class="pt"><strong>Full WooCommerce access</strong> — products, orders, coupons, customers</div></div>
-      <div class="perm"><div class="pi">&#9881;&#65039;</div><div class="pt"><strong>Site administration</strong> — plugins, themes, settings, database</div></div>
-      <div class="perm"><div class="pi">&#128272;</div><div class="pt"><strong>Security &amp; backups</strong> — sessions, IP blocking, database backup</div></div>
+    <div class="row">
+      <div class="rdot" style="background:#6366f1"></div>
+      <div class="rlbl">URL</div>
+      <div class="rval"><?php echo esc_html( $display_url ); ?></div>
     </div>
-    <div class="user-row">
-      <img src="<?php echo esc_url( get_avatar_url( $user->ID, array( 'size' => 36 ) ) ); ?>" class="avatar" alt="">
-      <div class="uinfo">
-        <strong><?php echo esc_html( $user->display_name ); ?></strong>
-        <span>Authorizing as <?php echo esc_html( $user->user_login ); ?> (Administrator)</span>
+    <div class="row">
+      <div class="rdot" style="background:#f59e0b"></div>
+      <div class="rlbl">Plugin</div>
+      <div class="rval">WP MCP Connector v<?php echo WMC_VERSION; ?></div>
+    </div>
+  </div>
+
+  <div class="perms">
+    <div class="perms-hd">Claude will be able to</div>
+
+    <div class="perm">
+      <div class="perm-icon" style="background:rgba(99,102,241,.15)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div class="perm-text">
+        <strong>Read &amp; manage content</strong>
+        <span>Posts, pages, media, comments</span>
       </div>
     </div>
-    <form method="post" action="<?php echo esc_url( $post_url ); ?>">
-      <input type="hidden" name="wmc_nonce"  value="<?php echo esc_attr( $nonce ); ?>">
-      <input type="hidden" name="wmc_action" value="allow">
-      <div class="btn-row">
-        <button type="button" onclick="document.querySelector('[name=wmc_action]').value='deny';this.closest('form').submit()" class="btn btn-deny">Deny</button>
-        <button type="submit" class="btn btn-allow">&#10003; Allow Access</button>
+
+    <div class="perm">
+      <div class="perm-icon" style="background:rgba(34,197,94,.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.96-1.61L23 6H6"/></svg>
       </div>
-    </form>
+      <div class="perm-text">
+        <strong>Full WooCommerce access</strong>
+        <span>Products, orders, coupons, customers</span>
+      </div>
+    </div>
+
+    <div class="perm">
+      <div class="perm-icon" style="background:rgba(251,191,36,.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07M8.46 8.46a5 5 0 000 7.07"/></svg>
+      </div>
+      <div class="perm-text">
+        <strong>Site administration</strong>
+        <span>Plugins, themes, settings, database</span>
+      </div>
+    </div>
+
+    <div class="perm">
+      <div class="perm-icon" style="background:rgba(239,68,68,.1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+      <div class="perm-text">
+        <strong>Security &amp; backups</strong>
+        <span>Sessions, IP blocking, database backup</span>
+      </div>
+    </div>
   </div>
-  <div class="footer">Secured by WordPress. <a href="<?php echo esc_url( admin_url( 'admin.php?page=wmc-settings' ) ); ?>">Manage connections &rarr;</a></div>
+
+  <div class="user-row">
+    <img src="<?php echo esc_url( get_avatar_url( $user->ID, array( 'size' => 68 ) ) ); ?>" class="avatar" alt="">
+    <div class="uinfo">
+      <strong><?php echo esc_html( $user->display_name ); ?></strong>
+      <span>Authorizing as <?php echo esc_html( $user->user_login ); ?> &middot; Administrator</span>
+    </div>
+  </div>
+
+  <form method="post" action="<?php echo esc_url( $post_url ); ?>">
+    <input type="hidden" name="wmc_nonce"  value="<?php echo esc_attr( $nonce ); ?>">
+    <input type="hidden" name="wmc_action" value="allow">
+    <div class="btns">
+      <button type="button" onclick="document.querySelector('[name=wmc_action]').value='deny';this.closest('form').submit()" class="btn btn-deny">Deny</button>
+      <button type="submit" class="btn btn-allow">
+        <svg style="display:inline;vertical-align:-2px;margin-right:6px" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Allow Access
+      </button>
+    </div>
+  </form>
+
+  <div class="foot">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    Secured by WordPress &mdash; <a href="<?php echo esc_url( admin_url( 'admin.php?page=wmc-settings' ) ); ?>">Manage connections</a>
+  </div>
+
 </div>
 </body></html>
 <?php
