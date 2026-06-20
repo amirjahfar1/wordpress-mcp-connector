@@ -618,6 +618,7 @@ class WMC_Advanced_Abilities {
 
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		require_once ABSPATH . 'wp-admin/includes/class-theme-upgrader.php';
+		require_once ABSPATH . 'wp-admin/includes/theme.php';
 		require_once ABSPATH . 'wp-admin/includes/theme-install.php';
 
 		$skin     = new WP_Ajax_Upgrader_Skin();
