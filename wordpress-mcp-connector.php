@@ -329,6 +329,84 @@ function wmc_connect_callback( WP_REST_Request $request ) {
 	), 200 );
 }
 
+/**
+ * Secret Token Authentication
+ *
+ * Registers a REST authentication handler that accepts the WMC Secret Token
+ * (from the admin dashboard) in the Authorization header or as a query param.
+ * This means no username or application password is needed — just the token.
+ *
+ * Header:  Authorization: Bearer YOUR_SECRET_TOKEN
+ * Or URL:  ?wmc_token=YOUR_SECRET_TOKEN
+ */
+add_filter( 'rest_authentication_errors', 'wmc_token_auth', 5 );
+function wmc_token_auth( $result ) {
+	// If another auth already succeeded/failed, don't interfere
+	if ( ! empty( $result ) ) return $result;
+
+	// Extract token from Authorization header or query string
+	$token = '';
+	$header = $_SERVER['HTTP_AUTHORIZATION'] ?? ( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '' );
+	if ( $header && stripos( $header, 'Bearer ' ) === 0 ) {
+		$token = trim( substr( $header, 7 ) );
+	}
+	if ( empty( $token ) && ! empty( $_REQUEST['wmc_token'] ) ) {
+		$token = sanitize_text_field( $_REQUEST['wmc_token'] );
+	}
+	if ( empty( $token ) ) return $result; // not a token-based request — let WP handle normally
+
+	// Validate token
+	$stored = get_option( 'wmc_secret_token', '' );
+	if ( empty( $stored ) || ! hash_equals( $stored, $token ) ) {
+		return new WP_Error( 'wmc_invalid_token', 'Invalid or missing WMC secret token.', array( 'status' => 401 ) );
+	}
+
+	// Token valid — authenticate as the site owner (first admin user)
+	$admins = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ids' ) );
+	if ( empty( $admins ) ) return new WP_Error( 'wmc_no_admin', 'No administrator found.', array( 'status' => 500 ) );
+
+	wp_set_current_user( $admins[0] );
+	return true;
+}
+
+/**
+ * Token info endpoint — GET /wp-json/wmc/v1/token-info
+ * Returns site info when authenticated with the secret token.
+ * Used by Claude to verify the connection is working.
+ */
+add_action( 'rest_api_init', function() {
+	register_rest_route( 'wmc/v1', '/token-info', array(
+		'methods'             => 'GET',
+		'callback'            => function() {
+			return array(
+				'success'            => true,
+				'connected'          => true,
+				'site_url'           => get_site_url(),
+				'site_name'          => get_bloginfo( 'name' ),
+				'wp_version'         => get_bloginfo( 'version' ),
+				'plugin_version'     => WMC_VERSION,
+				'abilities_endpoint' => rest_url( 'wp-abilities/v1/abilities' ),
+				'abilities_count'    => function_exists( 'wp_get_abilities' ) ? count( wp_get_abilities() ) : null,
+				'message'            => 'Connection successful! WordPress MCP Connector is active.',
+			);
+		},
+		'permission_callback' => function() {
+			return current_user_can( 'manage_options' );
+		},
+	) );
+} );
+
+/**
+ * AJAX: Regenerate secret token (called from admin dashboard)
+ */
+add_action( 'wp_ajax_wmc_regen_token', function() {
+	check_ajax_referer( 'wmc_regen_token', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Permission denied' );
+	$new_token = bin2hex( random_bytes( 32 ) );
+	update_option( 'wmc_secret_token', $new_token, false );
+	wp_send_json_success( array( 'token' => $new_token ) );
+} );
+
 function wmc_diagnose_callback() {
 	global $wp_filter;
 

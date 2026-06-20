@@ -220,12 +220,62 @@ class WMC_Settings {
 				</div>
 			</div>
 
+			<!-- CONNECTION CARD -->
+			<?php
+			$token = get_option( 'wmc_secret_token', '' );
+			if ( empty( $token ) ) {
+				$token = bin2hex( random_bytes( 32 ) );
+				update_option( 'wmc_secret_token', $token, false );
+			}
+			$site_url      = get_site_url();
+			$abilities_url = rest_url( 'wp-abilities/v1/abilities' );
+			?>
+			<div class="wmc-connect-card" id="wmc-connect-card">
+				<div class="wmc-connect-header">
+					<div class="wmc-connect-title">
+						<span class="wmc-connect-icon">🔗</span>
+						<div>
+							<strong>Connect to Claude</strong>
+							<div class="wmc-connect-sub">Copy your Secret Token and give it to Claude — no username or password needed</div>
+						</div>
+					</div>
+					<div class="wmc-connect-status" id="wmc-status-pill">
+						<span class="wmc-status-dot"></span> Ready to Connect
+					</div>
+				</div>
+				<div class="wmc-connect-body">
+					<div class="wmc-token-row">
+						<div class="wmc-token-label">Secret Token</div>
+						<div class="wmc-token-wrap">
+							<input type="text" id="wmc-secret-token" class="wmc-token-input" value="<?php echo esc_attr( $token ); ?>" readonly>
+							<button type="button" class="wmc-copy-btn" onclick="wmcCopyToken()">Copy</button>
+							<button type="button" class="wmc-regen-btn" onclick="wmcRegenToken()" title="Generate new token (will disconnect current sessions)">↺ Regen</button>
+						</div>
+						<div class="wmc-token-hint">This token acts as your API key. Keep it secret. Regenerate if compromised.</div>
+					</div>
+					<div class="wmc-info-grid">
+						<div class="wmc-info-item">
+							<div class="wmc-info-label">Site URL</div>
+							<div class="wmc-info-val"><code><?php echo esc_html( $site_url ); ?></code></div>
+						</div>
+						<div class="wmc-info-item">
+							<div class="wmc-info-label">Abilities Endpoint</div>
+							<div class="wmc-info-val"><code><?php echo esc_html( $abilities_url ); ?></code></div>
+						</div>
+					</div>
+					<div class="wmc-how-box">
+						<strong>How to connect:</strong>
+						Tell Claude: <em>"Connect to my WordPress site: <strong><?php echo esc_html( $site_url ); ?></strong> using token: <strong>[paste your token]</strong>"</em>
+					</div>
+				</div>
+			</div>
+
 			<!-- STATS BAR -->
 			<div class="wmc-stats">
 				<div class="wmc-stat">
 					<span class="wmc-stat-icon" style="background:#6366f1">⚡</span>
 					<div>
-						<div class="wmc-stat-num">63</div>
+						<div class="wmc-stat-num">142</div>
 						<div class="wmc-stat-label">Total Abilities</div>
 					</div>
 				</div>
@@ -342,6 +392,65 @@ class WMC_Settings {
 
 		<style>
 		.wmc-wrap *, .wmc-wrap *::before, .wmc-wrap *::after { box-sizing: border-box; }
+
+		/* ---- Connect Card ---- */
+		.wmc-connect-card {
+			background:#fff; border:1.5px solid #6366f1; border-radius:14px;
+			margin-bottom:14px; overflow:hidden;
+		}
+		.wmc-connect-header {
+			display:flex; align-items:center; justify-content:space-between;
+			padding:18px 24px; background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);
+			flex-wrap:wrap; gap:10px;
+		}
+		.wmc-connect-title { display:flex; align-items:center; gap:12px; color:#fff; }
+		.wmc-connect-icon { font-size:24px; }
+		.wmc-connect-title strong { font-size:15px; font-weight:700; }
+		.wmc-connect-sub { font-size:12px; opacity:.85; margin-top:2px; }
+		.wmc-connect-status {
+			display:flex; align-items:center; gap:7px;
+			background:rgba(255,255,255,.18); color:#fff;
+			font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px;
+		}
+		.wmc-status-dot {
+			width:8px; height:8px; border-radius:50%; background:#4ade80;
+			box-shadow:0 0 0 2px rgba(74,222,128,.3); animation:wmcPulse 2s infinite;
+		}
+		@keyframes wmcPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+		.wmc-connect-body { padding:20px 24px; display:flex; flex-direction:column; gap:16px; }
+
+		.wmc-token-row { display:flex; flex-direction:column; gap:6px; }
+		.wmc-token-label { font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
+		.wmc-token-wrap { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+		.wmc-token-input {
+			flex:1; min-width:200px; font-family:monospace; font-size:13px;
+			padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:8px;
+			background:#f8fafc; color:#334155; outline:none;
+		}
+		.wmc-token-input:focus { border-color:#6366f1; background:#fff; }
+		.wmc-copy-btn, .wmc-regen-btn {
+			padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600;
+			cursor:pointer; border:none; transition:all .15s; white-space:nowrap;
+		}
+		.wmc-copy-btn { background:#6366f1; color:#fff; }
+		.wmc-copy-btn:hover { background:#4f46e5; }
+		.wmc-regen-btn { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+		.wmc-regen-btn:hover { background:#fee2e2; color:#ef4444; border-color:#fca5a5; }
+		.wmc-token-hint { font-size:12px; color:#94a3b8; }
+
+		.wmc-info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+		.wmc-info-item { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; }
+		.wmc-info-label { font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; margin-bottom:5px; }
+		.wmc-info-val code { font-size:12px; color:#334155; word-break:break-all; background:transparent; }
+
+		.wmc-how-box {
+			background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px;
+			padding:14px 16px; font-size:13px; color:#6b21a8; line-height:1.6;
+		}
+		.wmc-how-box strong { color:#4c1d95; }
+
+		/* ---- Rest of styles ---- */
 		.wmc-wrap {
 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
 			max-width: 1200px;
@@ -571,6 +680,37 @@ class WMC_Settings {
 				var arrow = document.getElementById('arrow-' + sectionId);
 				var c = body.classList.toggle('wmc-collapsed');
 				arrow.classList.toggle('wmc-collapsed', c);
+			};
+
+			// ---- Token copy ----
+			window.wmcCopyToken = function() {
+				var input = document.getElementById('wmc-secret-token');
+				input.select(); input.setSelectionRange(0, 9999);
+				try { document.execCommand('copy'); } catch(e) { navigator.clipboard.writeText(input.value); }
+				var btn = document.querySelector('.wmc-copy-btn');
+				btn.textContent = 'Copied!'; btn.style.background = '#10b981';
+				setTimeout(function(){ btn.textContent = 'Copy'; btn.style.background = ''; }, 2000);
+			};
+
+			// ---- Token regenerate ----
+			window.wmcRegenToken = function() {
+				if (!confirm('Regenerate token? Any existing Claude connections using the old token will be disconnected.')) return;
+				var btn = document.querySelector('.wmc-regen-btn');
+				btn.textContent = 'Regenerating...'; btn.disabled = true;
+				fetch('<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: 'action=wmc_regen_token&nonce=<?php echo esc_js( wp_create_nonce( 'wmc_regen_token' ) ); ?>'
+				})
+				.then(function(r){ return r.json(); })
+				.then(function(data) {
+					if (data.success) {
+						document.getElementById('wmc-secret-token').value = data.data.token;
+						btn.textContent = '↺ Regen'; btn.disabled = false;
+					} else {
+						alert('Failed to regenerate token.'); btn.textContent = '↺ Regen'; btn.disabled = false;
+					}
+				});
 			};
 		})();
 		</script>
