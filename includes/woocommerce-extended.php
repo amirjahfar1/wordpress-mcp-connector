@@ -1593,7 +1593,7 @@ class WMC_WooCommerce_Extended {
 		$zones  = WC_Shipping_Zones::get_zones();
 		$result = array();
 		foreach ( $zones as $zone_data ) {
-			$zone    = new WC_Shipping_Zone( $zone_data['id'] );
+			$zone    = new WC_Shipping_Zone( $zone_data['zone_id'] );
 			$methods = array();
 			foreach ( $zone->get_shipping_methods() as $method ) {
 				$methods[] = array(
@@ -1658,6 +1658,7 @@ class WMC_WooCommerce_Extended {
 		if ( $err = self::woo_check() ) return $err;
 		global $wpdb;
 		$rates = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}woocommerce_tax_rates ORDER BY tax_rate_priority, tax_rate_order" );
+		if ( ! is_array( $rates ) ) $rates = array();
 		return array( 'success' => true, 'count' => count( $rates ), 'tax_rates' => $rates );
 	}
 
