@@ -28,6 +28,7 @@ require_once WMC_PLUGIN_DIR . 'includes/abilities.php';
 require_once WMC_PLUGIN_DIR . 'includes/woocommerce-extended.php';
 require_once WMC_PLUGIN_DIR . 'includes/advanced-abilities.php';
 require_once WMC_PLUGIN_DIR . 'includes/import-abilities.php';
+require_once WMC_PLUGIN_DIR . 'includes/oauth.php';
 
 /**
  * Load bundled MCP Adapter (so no separate plugin needed)
