@@ -590,6 +590,8 @@ class WMC_Advanced_Abilities {
 		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		WP_Filesystem();
 
 		$skin     = new WP_Ajax_Upgrader_Skin();
 		$upgrader = new Plugin_Upgrader( $skin );
@@ -620,6 +622,8 @@ class WMC_Advanced_Abilities {
 		require_once ABSPATH . 'wp-admin/includes/class-theme-upgrader.php';
 		require_once ABSPATH . 'wp-admin/includes/theme.php';
 		require_once ABSPATH . 'wp-admin/includes/theme-install.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		WP_Filesystem();
 
 		$skin     = new WP_Ajax_Upgrader_Skin();
 		$upgrader = new Theme_Upgrader( $skin );
