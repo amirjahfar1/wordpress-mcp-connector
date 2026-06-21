@@ -185,6 +185,7 @@ class WMC_Settings {
 				'icon'  => '🚀',
 				'abilities' => array(
 					array( 'label' => 'Get / Set / Audit Post SEO',      'slug' => 'wmc/get-post-seo · set-post-seo · get-seo-audit',              'desc' => 'Read full SEO data, update title/description/keyword/canonical/robots, and run SEO health audit with score for any post or page.',           'badge' => 'write', 'key' => array( 'seo_adv', 'meta' ) ),
+					array( 'label' => 'Get / Set Term SEO',               'slug' => 'wmc/get-term-seo · set-term-seo',                              'desc' => 'Read and update SEO title, description, focus keyword for any category, tag, product category, or product tag.',                              'badge' => 'write', 'key' => array( 'seo_adv', 'term_meta' ) ),
 					array( 'label' => 'Open Graph & Twitter/X Card',     'slug' => 'wmc/set-open-graph · set-twitter-card',                        'desc' => 'Set Facebook/WhatsApp Open Graph and Twitter/X Card title, description, and image for any post or page.',                                    'badge' => 'write', 'key' => array( 'seo_adv', 'social' ) ),
 					array( 'label' => 'Schema Markup (JSON-LD)',          'slug' => 'wmc/add-schema-markup · get-schema-markup',                    'desc' => 'Add and read JSON-LD schema markup (Article, FAQ, HowTo, Product, LocalBusiness, BreadcrumbList, custom) output in <head>.',               'badge' => 'write', 'key' => array( 'seo_adv', 'schema' ) ),
 					array( 'label' => 'Sitemap Management',               'slug' => 'wmc/get-sitemap-urls · ping-search-engines · exclude-from-sitemap', 'desc' => 'List all sitemap URLs, ping Google & Bing with sitemap, include or exclude specific posts from the XML sitemap.',                   'badge' => 'write', 'key' => array( 'seo_adv', 'sitemap' ) ),
@@ -359,7 +360,7 @@ class WMC_Settings {
 				<div class="wmc-stat">
 					<span class="wmc-stat-icon" style="background:#6366f1">⚡</span>
 					<div>
-						<div class="wmc-stat-num">168</div>
+						<div class="wmc-stat-num">170</div>
 						<div class="wmc-stat-label">Total Abilities</div>
 					</div>
 				</div>
@@ -937,7 +938,7 @@ class WMC_Settings {
 			'roles'       => array( 'read' => 1, 'write' => 1 ),
 			'woocommerce' => array( 'read' => 1, 'write' => 1 ),
 			'system'      => array( 'read' => 1, 'write' => 1 ),
-			'seo_adv'     => array( 'meta' => 1, 'social' => 1, 'schema' => 1, 'sitemap' => 1, 'canonical' => 1, 'keywords' => 1, 'robots' => 1, 'reports' => 1 ),
+			'seo_adv'     => array( 'meta' => 1, 'term_meta' => 1, 'social' => 1, 'schema' => 1, 'sitemap' => 1, 'canonical' => 1, 'keywords' => 1, 'robots' => 1, 'reports' => 1 ),
 			'permalinks'  => array( 'read' => 1, 'write' => 1 ),
 		);
 	}

@@ -190,6 +190,47 @@ class WMC_SEO_Abilities {
 			'permission_callback' => fn() => current_user_can( 'edit_posts' ),
 		) );
 
+		// ---------- get-term-seo ----------
+		self::register( 'wmc/get-term-seo', array(
+			'label'       => 'Get Term SEO Data',
+			'description' => 'Get SEO title and description for a category, tag, or product category/tag',
+			'category'    => 'wp-content-manager',
+			'input_schema' => array(
+				'type'       => 'object',
+				'properties' => array(
+					'term_id'  => array( 'type' => 'integer', 'description' => 'Term ID (category, tag, product_cat, product_tag, etc.)' ),
+					'taxonomy' => array( 'type' => 'string',  'description' => 'Taxonomy slug: category, post_tag, product_cat, product_tag. Default: category', 'default' => 'category' ),
+					'plugin'   => array( 'type' => 'string',  'enum' => array( 'auto', 'yoast', 'rankmath', 'aioseo', 'none' ), 'default' => 'auto' ),
+				),
+				'required' => array( 'term_id' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'get_term_seo' ),
+			'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+		) );
+
+		// ---------- set-term-seo ----------
+		self::register( 'wmc/set-term-seo', array(
+			'label'       => 'Set Term SEO Data',
+			'description' => 'Set SEO title, description, and focus keyword for a category, tag, or product category/tag (Yoast, Rank Math, AIOSEO)',
+			'category'    => 'wp-content-manager',
+			'input_schema' => array(
+				'type'       => 'object',
+				'properties' => array(
+					'term_id'         => array( 'type' => 'integer', 'description' => 'Term ID (category, tag, product_cat, product_tag, etc.)' ),
+					'taxonomy'        => array( 'type' => 'string',  'description' => 'Taxonomy slug: category, post_tag, product_cat, product_tag. Default: category', 'default' => 'category' ),
+					'seo_title'       => array( 'type' => 'string',  'description' => 'SEO meta title' ),
+					'seo_description' => array( 'type' => 'string',  'description' => 'SEO meta description' ),
+					'focus_keyword'   => array( 'type' => 'string',  'description' => 'Focus/target keyword' ),
+					'plugin'          => array( 'type' => 'string',  'enum' => array( 'auto', 'yoast', 'rankmath', 'aioseo', 'none' ), 'default' => 'auto' ),
+				),
+				'required' => array( 'term_id' ),
+			),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'set_term_seo' ),
+			'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+		) );
+
 		// ---------- get-seo-audit ----------
 		self::register( 'wmc/get-seo-audit', array(
 			'label'       => 'Get SEO Audit',
@@ -567,6 +608,76 @@ class WMC_SEO_Abilities {
 	// ================================================================
 	//  CALLBACKS — META
 	// ================================================================
+
+	public static function get_term_seo( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'term_meta' ) ) return self::disabled( 'Get / Set Term SEO', 'seo_adv', 'term_meta' );
+		$term_id  = intval( $params['term_id'] ?? 0 );
+		$taxonomy = sanitize_text_field( $params['taxonomy'] ?? 'category' );
+		$term     = get_term( $term_id, $taxonomy );
+		if ( ! $term || is_wp_error( $term ) ) return array( 'success' => false, 'message' => 'Term not found.' );
+
+		$plugin = $params['plugin'] ?? 'auto';
+		$active = $plugin === 'auto' ? self::detect_seo_plugin() : $plugin;
+		$keys   = self::term_seo_meta_keys( $active );
+
+		return array(
+			'success'         => true,
+			'term_id'         => $term_id,
+			'taxonomy'        => $taxonomy,
+			'name'            => $term->name,
+			'slug'            => $term->slug,
+			'seo_plugin'      => $active,
+			'seo_title'       => get_term_meta( $term_id, $keys['title'], true ),
+			'seo_description' => get_term_meta( $term_id, $keys['desc'], true ),
+			'focus_keyword'   => get_term_meta( $term_id, $keys['keyword'], true ),
+		);
+	}
+
+	public static function set_term_seo( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'term_meta' ) ) return self::disabled( 'Get / Set Term SEO', 'seo_adv', 'term_meta' );
+		$term_id  = intval( $params['term_id'] ?? 0 );
+		$taxonomy = sanitize_text_field( $params['taxonomy'] ?? 'category' );
+		$term     = get_term( $term_id, $taxonomy );
+		if ( ! $term || is_wp_error( $term ) ) return array( 'success' => false, 'message' => 'Term not found.' );
+
+		$plugin  = $params['plugin'] ?? 'auto';
+		$active  = $plugin === 'auto' ? self::detect_seo_plugin() : $plugin;
+		$keys    = self::term_seo_meta_keys( $active );
+		$updated = array();
+
+		$fields = array(
+			'seo_title'       => 'title',
+			'seo_description' => 'desc',
+			'focus_keyword'   => 'keyword',
+		);
+
+		foreach ( $fields as $param_key => $meta_key ) {
+			if ( isset( $params[ $param_key ] ) ) {
+				update_term_meta( $term_id, $keys[ $meta_key ], sanitize_text_field( $params[ $param_key ] ) );
+				$updated[] = $param_key;
+			}
+		}
+
+		return array(
+			'success'    => true,
+			'term_id'    => $term_id,
+			'taxonomy'   => $taxonomy,
+			'name'       => $term->name,
+			'seo_plugin' => $active,
+			'updated'    => $updated,
+			'message'    => 'Term SEO updated for ' . count( $updated ) . ' field(s).',
+		);
+	}
+
+	private static function term_seo_meta_keys( $plugin ) {
+		$map = array(
+			'yoast'    => array( 'title' => 'wpseo_title', 'desc' => 'wpseo_desc', 'keyword' => 'wpseo_focuskw' ),
+			'rankmath' => array( 'title' => 'rank_math_title', 'desc' => 'rank_math_description', 'keyword' => 'rank_math_focus_keyword' ),
+			'aioseo'   => array( 'title' => '_aioseo_title', 'desc' => '_aioseo_description', 'keyword' => '_aioseo_keyphrases' ),
+			'none'     => array( 'title' => '_wmc_seo_title', 'desc' => '_wmc_seo_description', 'keyword' => '_wmc_seo_keyword' ),
+		);
+		return $map[ $plugin ] ?? $map['none'];
+	}
 
 	public static function get_post_seo( $params ) {
 		if ( ! self::is_enabled( 'seo_adv', 'meta' ) ) return self::disabled( 'Get / Set / Audit Post SEO', 'seo_adv', 'meta' );
