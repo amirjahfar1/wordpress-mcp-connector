@@ -830,8 +830,12 @@ class WMC_SEO_Abilities {
 					'datePublished'    => $date,
 					'dateModified'     => $mod,
 					'url'              => $url,
-					'author'           => array( '@type' => 'Person', 'name' => $data['author'] ?? get_bloginfo( 'name' ) ),
-					'publisher'        => array( '@type' => 'Organization', 'name' => get_bloginfo( 'name' ), 'url' => get_home_url() ),
+					'author'           => is_array( $data['author'] ?? null )
+						? array( '@type' => 'Person', 'name' => $data['author']['name'] ?? get_bloginfo( 'name' ) )
+						: array( '@type' => 'Person', 'name' => $data['author'] ?? get_bloginfo( 'name' ) ),
+					'publisher'        => is_array( $data['publisher'] ?? null )
+						? array( '@type' => 'Organization', 'name' => $data['publisher']['name'] ?? get_bloginfo( 'name' ), 'url' => $data['publisher']['url'] ?? get_home_url() )
+						: array( '@type' => 'Organization', 'name' => get_bloginfo( 'name' ), 'url' => get_home_url() ),
 					'description'      => $data['description'] ?? wp_trim_words( $post->post_content, 30 ),
 				);
 
