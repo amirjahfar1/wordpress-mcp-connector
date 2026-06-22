@@ -710,7 +710,31 @@ class WMC_SEO_Abilities {
 
 		$plugin = $params['plugin'] ?? 'auto';
 		$active = $plugin === 'auto' ? self::detect_seo_plugin() : $plugin;
-		$keys   = self::term_seo_meta_keys( $active );
+
+		$title   = '';
+		$desc    = '';
+		$keyword = '';
+
+		if ( $active === 'yoast' ) {
+			// Yoast stores ALL term meta in a single wp_options entry
+			$tax_meta = get_option( 'wpseo_taxonomy_meta', array() );
+			$entry    = $tax_meta[ $taxonomy ][ $term_id ] ?? array();
+			$title    = $entry['wpseo_title']   ?? '';
+			$desc     = $entry['wpseo_desc']    ?? '';
+			$keyword  = $entry['wpseo_focuskw'] ?? '';
+		} elseif ( $active === 'rankmath' ) {
+			$title   = get_term_meta( $term_id, 'rank_math_title', true );
+			$desc    = get_term_meta( $term_id, 'rank_math_description', true );
+			$keyword = get_term_meta( $term_id, 'rank_math_focus_keyword', true );
+		} elseif ( $active === 'aioseo' ) {
+			$title   = get_term_meta( $term_id, '_aioseo_title', true );
+			$desc    = get_term_meta( $term_id, '_aioseo_description', true );
+			$keyword = get_term_meta( $term_id, '_aioseo_keyphrases', true );
+		} else {
+			$title   = get_term_meta( $term_id, '_wmc_seo_title', true );
+			$desc    = get_term_meta( $term_id, '_wmc_seo_description', true );
+			$keyword = get_term_meta( $term_id, '_wmc_seo_keyword', true );
+		}
 
 		return array(
 			'success'         => true,
@@ -719,9 +743,9 @@ class WMC_SEO_Abilities {
 			'name'            => $term->name,
 			'slug'            => $term->slug,
 			'seo_plugin'      => $active,
-			'seo_title'       => get_term_meta( $term_id, $keys['title'], true ),
-			'seo_description' => get_term_meta( $term_id, $keys['desc'], true ),
-			'focus_keyword'   => get_term_meta( $term_id, $keys['keyword'], true ),
+			'seo_title'       => $title,
+			'seo_description' => $desc,
+			'focus_keyword'   => $keyword,
 		);
 	}
 
@@ -734,20 +758,42 @@ class WMC_SEO_Abilities {
 
 		$plugin  = $params['plugin'] ?? 'auto';
 		$active  = $plugin === 'auto' ? self::detect_seo_plugin() : $plugin;
-		$keys    = self::term_seo_meta_keys( $active );
 		$updated = array();
 
-		$fields = array(
-			'seo_title'       => 'title',
-			'seo_description' => 'desc',
-			'focus_keyword'   => 'keyword',
-		);
+		if ( $active === 'yoast' ) {
+			// Yoast stores ALL term meta in a single wp_options entry — NOT in term_meta table
+			$tax_meta = get_option( 'wpseo_taxonomy_meta', array() );
+			if ( ! isset( $tax_meta[ $taxonomy ] ) ) $tax_meta[ $taxonomy ] = array();
+			if ( ! isset( $tax_meta[ $taxonomy ][ $term_id ] ) ) $tax_meta[ $taxonomy ][ $term_id ] = array();
 
-		foreach ( $fields as $param_key => $meta_key ) {
-			if ( isset( $params[ $param_key ] ) ) {
-				update_term_meta( $term_id, $keys[ $meta_key ], sanitize_text_field( $params[ $param_key ] ) );
-				$updated[] = $param_key;
+			if ( isset( $params['seo_title'] ) ) {
+				$tax_meta[ $taxonomy ][ $term_id ]['wpseo_title']   = sanitize_text_field( $params['seo_title'] );
+				$updated[] = 'seo_title';
 			}
+			if ( isset( $params['seo_description'] ) ) {
+				$tax_meta[ $taxonomy ][ $term_id ]['wpseo_desc']    = sanitize_text_field( $params['seo_description'] );
+				$updated[] = 'seo_description';
+			}
+			if ( isset( $params['focus_keyword'] ) ) {
+				$tax_meta[ $taxonomy ][ $term_id ]['wpseo_focuskw'] = sanitize_text_field( $params['focus_keyword'] );
+				$updated[] = 'focus_keyword';
+			}
+			update_option( 'wpseo_taxonomy_meta', $tax_meta );
+
+		} elseif ( $active === 'rankmath' ) {
+			if ( isset( $params['seo_title'] ) )       { update_term_meta( $term_id, 'rank_math_title',          sanitize_text_field( $params['seo_title'] ) );       $updated[] = 'seo_title'; }
+			if ( isset( $params['seo_description'] ) ) { update_term_meta( $term_id, 'rank_math_description',    sanitize_text_field( $params['seo_description'] ) ); $updated[] = 'seo_description'; }
+			if ( isset( $params['focus_keyword'] ) )   { update_term_meta( $term_id, 'rank_math_focus_keyword',  sanitize_text_field( $params['focus_keyword'] ) );   $updated[] = 'focus_keyword'; }
+
+		} elseif ( $active === 'aioseo' ) {
+			if ( isset( $params['seo_title'] ) )       { update_term_meta( $term_id, '_aioseo_title',       sanitize_text_field( $params['seo_title'] ) );       $updated[] = 'seo_title'; }
+			if ( isset( $params['seo_description'] ) ) { update_term_meta( $term_id, '_aioseo_description', sanitize_text_field( $params['seo_description'] ) ); $updated[] = 'seo_description'; }
+			if ( isset( $params['focus_keyword'] ) )   { update_term_meta( $term_id, '_aioseo_keyphrases',  sanitize_text_field( $params['focus_keyword'] ) );   $updated[] = 'focus_keyword'; }
+
+		} else {
+			if ( isset( $params['seo_title'] ) )       { update_term_meta( $term_id, '_wmc_seo_title',       sanitize_text_field( $params['seo_title'] ) );       $updated[] = 'seo_title'; }
+			if ( isset( $params['seo_description'] ) ) { update_term_meta( $term_id, '_wmc_seo_description', sanitize_text_field( $params['seo_description'] ) ); $updated[] = 'seo_description'; }
+			if ( isset( $params['focus_keyword'] ) )   { update_term_meta( $term_id, '_wmc_seo_keyword',     sanitize_text_field( $params['focus_keyword'] ) );   $updated[] = 'focus_keyword'; }
 		}
 
 		return array(
@@ -759,16 +805,6 @@ class WMC_SEO_Abilities {
 			'updated'    => $updated,
 			'message'    => 'Term SEO updated for ' . count( $updated ) . ' field(s).',
 		);
-	}
-
-	private static function term_seo_meta_keys( $plugin ) {
-		$map = array(
-			'yoast'    => array( 'title' => 'wpseo_title', 'desc' => 'wpseo_desc', 'keyword' => 'wpseo_focuskw' ),
-			'rankmath' => array( 'title' => 'rank_math_title', 'desc' => 'rank_math_description', 'keyword' => 'rank_math_focus_keyword' ),
-			'aioseo'   => array( 'title' => '_aioseo_title', 'desc' => '_aioseo_description', 'keyword' => '_aioseo_keyphrases' ),
-			'none'     => array( 'title' => '_wmc_seo_title', 'desc' => '_wmc_seo_description', 'keyword' => '_wmc_seo_keyword' ),
-		);
-		return $map[ $plugin ] ?? $map['none'];
 	}
 
 	public static function get_post_seo( $params ) {
