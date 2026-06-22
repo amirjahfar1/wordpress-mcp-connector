@@ -3,7 +3,7 @@
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://nextbrainsolutions.com
  * Description: Exposes 171 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, advanced SEO (meta, Open Graph, Twitter Card, Schema, Sitemap, Redirects, Robots), security, backups, permalink/slug management, and product importing from other WooCommerce stores.
- * Version: 3.6.1
+ * Version: 3.6.2
  * Author: Amir Ali
  * Author URI: https://nextbrainsolutions.com
  * License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'WMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WMC_VERSION', '3.6.1' );
+define( 'WMC_VERSION', '3.6.2' );
 
 /**
  * Load the abilities and settings files
@@ -392,8 +392,14 @@ add_action( 'wp_ajax_wmc_gen_app_password', function() {
 		wp_send_json_error( $result->get_error_message() );
 	}
 
+	// Format password with spaces (groups of 4) — required by @automattic/mcp-wordpress-remote
+	// and standard WordPress Application Password format: xxxx xxxx xxxx xxxx xxxx xxxx
+	$raw      = $result[0];
+	$chunks   = str_split( $raw, 4 );
+	$password = implode( ' ', $chunks );
+
 	wp_send_json_success( array(
-		'password' => $result[0], // plain text only available at creation
+		'password' => $password,
 		'username' => $user->user_login,
 		'site_url' => get_site_url(),
 	) );
