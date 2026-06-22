@@ -184,6 +184,7 @@ class WMC_Settings {
 				'title' => 'SEO Advanced',
 				'icon'  => '🚀',
 				'abilities' => array(
+					array( 'label' => 'Detect SEO Setup',                 'slug' => 'wmc/detect-seo-setup',                                          'desc' => 'Call this first before any SEO operation. Returns active SEO plugin, version, correct meta keys for posts/pages/products/terms, and which ability to use for each content type.',                                            'badge' => 'read',  'key' => array( 'seo_adv', 'meta' ) ),
 					array( 'label' => 'Get / Set / Audit Post SEO',      'slug' => 'wmc/get-post-seo · set-post-seo · get-seo-audit',              'desc' => 'Read full SEO data, update title/description/keyword/canonical/robots, and run SEO health audit with score for any post or page.',           'badge' => 'write', 'key' => array( 'seo_adv', 'meta' ) ),
 					array( 'label' => 'Get / Set Term SEO',               'slug' => 'wmc/get-term-seo · set-term-seo',                              'desc' => 'Read and update SEO title, description, focus keyword for any category, tag, product category, or product tag.',                              'badge' => 'write', 'key' => array( 'seo_adv', 'term_meta' ) ),
 					array( 'label' => 'Open Graph & Twitter/X Card',     'slug' => 'wmc/set-open-graph · set-twitter-card',                        'desc' => 'Set Facebook/WhatsApp Open Graph and Twitter/X Card title, description, and image for any post or page.',                                    'badge' => 'write', 'key' => array( 'seo_adv', 'social' ) ),
@@ -360,7 +361,7 @@ class WMC_Settings {
 				<div class="wmc-stat">
 					<span class="wmc-stat-icon" style="background:#6366f1">⚡</span>
 					<div>
-						<div class="wmc-stat-num">170</div>
+						<div class="wmc-stat-num">171</div>
 						<div class="wmc-stat-label">Total Abilities</div>
 					</div>
 				</div>

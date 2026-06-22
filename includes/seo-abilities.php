@@ -149,6 +149,17 @@ class WMC_SEO_Abilities {
 
 	private static function register_meta_abilities() {
 
+		// ---------- detect-seo-setup ----------
+		self::register( 'wmc/detect-seo-setup', array(
+			'label'               => 'Detect SEO Setup',
+			'description'         => 'ALWAYS call this first before any SEO read/write operation. Returns which SEO plugin is active (Yoast/RankMath/AIOSEO/none), its version, supported content types, correct meta keys for posts and terms, and the recommended ability to use for each content type. Prevents trial-and-error when updating meta on posts, pages, products, categories, or tags.',
+			'category'            => 'wp-content-manager',
+			'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+			'output_schema'       => array( 'type' => 'object' ),
+			'execute_callback'    => array( self::class, 'detect_seo_setup' ),
+			'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+		) );
+
 		// ---------- get-post-seo ----------
 		self::register( 'wmc/get-post-seo', array(
 			'label'       => 'Get Post SEO Data',
@@ -608,6 +619,87 @@ class WMC_SEO_Abilities {
 	// ================================================================
 	//  CALLBACKS — META
 	// ================================================================
+
+	public static function detect_seo_setup( $params ) {
+		if ( ! self::is_enabled( 'seo_adv', 'meta' ) ) return self::disabled( 'Detect SEO Setup', 'seo_adv', 'meta' );
+
+		$plugin  = self::detect_seo_plugin();
+		$version = '';
+		$keys    = self::seo_meta_keys( $plugin );
+
+		if ( $plugin === 'yoast' && defined( 'WPSEO_VERSION' ) ) {
+			$version = WPSEO_VERSION;
+		} elseif ( $plugin === 'rankmath' && defined( 'RANK_MATH_VERSION' ) ) {
+			$version = RANK_MATH_VERSION;
+		} elseif ( $plugin === 'aioseo' && defined( 'AIOSEO_VERSION' ) ) {
+			$version = AIOSEO_VERSION;
+		}
+
+		// Term meta keys per plugin
+		$term_keys_map = array(
+			'yoast'    => array( 'title' => 'wpseo_title',        'desc' => 'wpseo_desc',             'keyword' => 'wpseo_focuskw' ),
+			'rankmath' => array( 'title' => 'rank_math_title',    'desc' => 'rank_math_description',  'keyword' => 'rank_math_focus_keyword' ),
+			'aioseo'   => array( 'title' => '_aioseo_title',      'desc' => '_aioseo_description',    'keyword' => '_aioseo_keyphrases' ),
+			'none'     => array( 'title' => '_wmc_seo_title',     'desc' => '_wmc_seo_description',   'keyword' => '_wmc_seo_keyword' ),
+		);
+		$term_keys = $term_keys_map[ $plugin ] ?? $term_keys_map['none'];
+
+		// Check if term meta is REST-exposed
+		$term_rest_exposed = false;
+		$rest_routes       = rest_get_server()->get_routes();
+		foreach ( array_keys( $rest_routes ) as $route ) {
+			if ( strpos( $route, 'categories' ) !== false || strpos( $route, 'tags' ) !== false ) {
+				$term_rest_exposed = true;
+				break;
+			}
+		}
+
+		return array(
+			'success'            => true,
+			'seo_plugin'         => $plugin,
+			'version'            => $version,
+			'supported_types'    => array(
+				'posts'     => array(
+					'supported'          => true,
+					'recommended_ability'=> 'wmc/set-post-seo',
+					'meta_key_title'     => $keys['title'],
+					'meta_key_desc'      => $keys['desc'],
+					'meta_key_keyword'   => $keys['keyword'],
+					'storage'            => 'post_meta',
+				),
+				'pages'     => array(
+					'supported'          => true,
+					'recommended_ability'=> 'wmc/set-post-seo',
+					'meta_key_title'     => $keys['title'],
+					'meta_key_desc'      => $keys['desc'],
+					'storage'            => 'post_meta',
+				),
+				'products'  => array(
+					'supported'          => true,
+					'recommended_ability'=> 'wmc/set-post-seo',
+					'note'               => 'WooCommerce products are posts — use post_id with wmc/set-post-seo',
+					'meta_key_title'     => $keys['title'],
+					'meta_key_desc'      => $keys['desc'],
+					'storage'            => 'post_meta',
+				),
+				'terms'     => array(
+					'supported'          => true,
+					'recommended_ability'=> 'wmc/set-term-seo',
+					'note'               => 'Works for category, post_tag, product_cat, product_tag. Use term_id + taxonomy.',
+					'meta_key_title'     => $term_keys['title'],
+					'meta_key_desc'      => $term_keys['desc'],
+					'meta_key_keyword'   => $term_keys['keyword'],
+					'storage'            => 'term_meta',
+					'rest_exposed'       => $term_rest_exposed,
+				),
+			),
+			'do_not_use'         => array(
+				'wp_get_seo_meta on terms' => 'Does not work — terms use term_meta not post_meta',
+				'REST /wp-json/yoast/v1 on terms' => $plugin === 'yoast' ? 'Yoast does not expose term meta via REST — use wmc/set-term-seo directly' : 'N/A',
+			),
+			'instruction'        => 'Use wmc/set-post-seo for posts/pages/products. Use wmc/set-term-seo for all taxonomy terms. Never use post_meta functions on terms.',
+		);
+	}
 
 	public static function get_term_seo( $params ) {
 		if ( ! self::is_enabled( 'seo_adv', 'term_meta' ) ) return self::disabled( 'Get / Set Term SEO', 'seo_adv', 'term_meta' );

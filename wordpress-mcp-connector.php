@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://nextbrainsolutions.com
- * Description: Exposes 170 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, advanced SEO (meta, Open Graph, Twitter Card, Schema, Sitemap, Redirects, Robots), security, backups, permalink/slug management, and product importing from other WooCommerce stores.
- * Version: 3.6.0
+ * Description: Exposes 171 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, advanced SEO (meta, Open Graph, Twitter Card, Schema, Sitemap, Redirects, Robots), security, backups, permalink/slug management, and product importing from other WooCommerce stores.
+ * Version: 3.6.1
  * Author: Amir Ali
  * Author URI: https://nextbrainsolutions.com
  * License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'WMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WMC_VERSION', '3.6.0' );
+define( 'WMC_VERSION', '3.6.1' );
 
 /**
  * Load the abilities and settings files
@@ -279,6 +279,7 @@ wmc/get-woo-settings, wmc/update-woo-setting
 wmc/get-woo-sales-report, wmc/get-woo-top-products
 
 ### SEO (Yoast / Rank Math / AIOSEO — auto-detected)
+wmc/detect-seo-setup                        — ⚠️ ALWAYS call this first before any SEO operation. Returns active plugin, version, correct meta keys, and recommended ability per content type (post/page/product/term). Prevents trial-and-error.
 wmc/get-post-seo, wmc/set-post-seo          — Read/write SEO for posts, pages, products
 wmc/get-term-seo, wmc/set-term-seo          — Read/write SEO for categories, tags, product_cat, product_tag
 wmc/set-open-graph, wmc/set-twitter-card    — Social meta (OG + Twitter/X Card)
@@ -323,6 +324,7 @@ Import products from any public WooCommerce store (no API key needed).
 wmc/get-comments, wmc/moderate-comment, wmc/delete-comment
 
 ## Key Rules
+0. ALWAYS call wmc/detect-seo-setup first before any SEO read/write — it tells you the active plugin, correct meta keys, and which ability to use. Never assume.
 1. For posts/pages/products SEO → use wmc/get-post-seo and wmc/set-post-seo (post_id is the WooCommerce product ID too)
 2. For category/tag SEO → use wmc/get-term-seo and wmc/set-term-seo (specify taxonomy: category, post_tag, product_cat, product_tag)
 3. WooCommerce reviews require comment_approved = '1' (integer string), not 'approve'
