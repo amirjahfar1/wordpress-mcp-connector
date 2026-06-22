@@ -103,9 +103,30 @@ Settings URL: https://site.com/wp-admin/admin.php?page=wmc-settings
 - [ ] Add the ability to `get_sections()` in `settings.php`
 - [ ] Add the key to `get_default_config()` in `settings.php`
 - [ ] Update the total abilities count in the stats bar in `settings.php`
+- [ ] **Update `wmc_get_system_prompt()` in `wordpress-mcp-connector.php`** — add the new ability to the correct group in the system prompt so AI clients know it exists
 - [ ] Update the plugin version (patch bump: 3.5.0 → 3.5.1, or minor: 3.5.0 → 3.6.0)
 - [ ] Update the `Description:` in the plugin header with new count
 - [ ] Commit and push to GitHub
+
+---
+
+## MANDATORY RULE — System Prompt Must Always Be Updated
+
+The `wmc_get_system_prompt()` function in `wordpress-mcp-connector.php` is sent to every AI client (Claude, Cursor, ChatGPT, etc.) when they connect. It tells the AI what tools exist and how to use them.
+
+**Every time a new ability is added, `wmc_get_system_prompt()` MUST be updated:**
+
+1. Find the correct group in the system prompt (e.g., `### SEO`, `### WOOCOMMERCE — PRODUCTS`)
+2. Add the new ability name and a brief note if needed
+3. If it's a new category, add a new `### GROUP NAME` section
+
+The system prompt is inside `wmc_get_system_prompt()` as a PHP heredoc string. Example:
+
+```php
+### MY NEW GROUP
+wmc/my-new-ability-one, wmc/my-new-ability-two
+Brief note about when to use these if not obvious.
+```
 
 ---
 
