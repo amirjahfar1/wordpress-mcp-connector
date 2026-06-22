@@ -3,7 +3,7 @@
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://nextbrainsolutions.com
  * Description: Exposes 171 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, advanced SEO (meta, Open Graph, Twitter Card, Schema, Sitemap, Redirects, Robots), security, backups, permalink/slug management, and product importing from other WooCommerce stores.
- * Version: 3.6.3
+ * Version: 3.6.4
  * Author: Amir Ali
  * Author URI: https://nextbrainsolutions.com
  * License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'WMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WMC_VERSION', '3.6.3' );
+define( 'WMC_VERSION', '3.6.4' );
 
 /**
  * Load the abilities and settings files
@@ -218,12 +218,36 @@ add_filter( 'mcp_adapter_default_server_config', function( $config ) {
  * function to include that ability in the correct group below.
  * ───────────────────────────────────────────────────────────────────────────
  */
+/**
+ * Detect the active SEO plugin and return a compact status string for the system prompt.
+ * Runs at request time so it always reflects the current plugin state.
+ */
+function wmc_detect_active_seo_plugin(): string {
+	if ( defined( 'WPSEO_VERSION' ) ) {
+		return 'Yoast SEO (v' . WPSEO_VERSION . ') — post/page/product meta: use _yoast_wpseo_title / _yoast_wpseo_metadesc via wmc/set-post-seo; term/category meta: stored in wp_options wpseo_taxonomy_meta via wmc/set-term-seo.';
+	}
+	if ( defined( 'RANK_MATH_VERSION' ) ) {
+		return 'Rank Math (v' . RANK_MATH_VERSION . ') — post/page/product meta: use rank_math_title / rank_math_description via wmc/set-post-seo; term/category meta: same keys via wmc/set-term-seo (stored in wp_termmeta).';
+	}
+	if ( defined( 'AIOSEO_VERSION' ) ) {
+		return 'All in One SEO (v' . AIOSEO_VERSION . ') — post/page/product meta: use _aioseo_title / _aioseo_description via wmc/set-post-seo; term/category meta: same keys via wmc/set-term-seo.';
+	}
+	if ( class_exists( 'The_SEO_Framework' ) ) {
+		return 'The SEO Framework — use wmc/set-post-seo for posts/pages/products; term meta via wmc/set-term-seo.';
+	}
+	return 'No known SEO plugin detected. Call wmc/detect-seo-setup for confirmation before any SEO operation.';
+}
+
 function wmc_get_system_prompt(): string {
-	$site_name = get_bloginfo( 'name' );
-	$site_url  = get_home_url();
+	$site_name  = get_bloginfo( 'name' );
+	$site_url   = get_home_url();
+	$seo_status = wmc_detect_active_seo_plugin();
 
 	return <<<PROMPT
 You are connected to "{$site_name}" ({$site_url}) via the WordPress MCP Connector plugin.
+
+## Active SEO Plugin (detected at connect time)
+{$seo_status}
 
 ## How This Works
 This plugin exposes all WordPress and WooCommerce management as MCP tools. Every task — creating posts, managing products, updating SEO, running backups, installing plugins — is done by calling the right tool. You do NOT need REST API credentials or direct database access. Just call the appropriate tool.
