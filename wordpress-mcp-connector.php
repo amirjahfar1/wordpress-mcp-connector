@@ -506,6 +506,23 @@ function wmc_activate() {
 }
 register_activation_hook( __FILE__, 'wmc_activate' );
 
+// Ping on plugin update
+add_action( 'upgrader_process_complete', function( $upgrader, $options ) {
+	if (
+		$options['action'] === 'update' &&
+		$options['type'] === 'plugin' &&
+		! empty( $options['plugins'] )
+	) {
+		foreach ( $options['plugins'] as $plugin ) {
+			if ( strpos( $plugin, 'wordpress-mcp-connector' ) !== false ) {
+				delete_transient( 'wmc_weekly_ping' );
+				wmc_ping_tracker( 'activate' );
+				break;
+			}
+		}
+	}
+}, 10, 2 );
+
 // Weekly ping to keep tracking data fresh (fires on any admin page load, max once per week)
 add_action( 'admin_init', function() {
 	if ( ! get_transient( 'wmc_weekly_ping' ) ) {
