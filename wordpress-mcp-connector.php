@@ -472,9 +472,14 @@ function wmc_diagnose_callback() {
 function wmc_ping_tracker( $action = 'activate' ) {
 	$body = wp_json_encode( array(
 		'site_url'       => get_site_url(),
+		'site_name'      => get_bloginfo( 'name' ),
+		'admin_email'    => get_option( 'admin_email' ),
 		'plugin_version' => '3.6.5',
 		'wp_version'     => get_bloginfo( 'version' ),
 		'php_version'    => PHP_VERSION,
+		'woo_active'     => class_exists( 'WooCommerce' ),
+		'locale'         => get_locale(),
+		'total_posts'    => (int) wp_count_posts()->publish,
 		'action'         => $action,
 	) );
 
