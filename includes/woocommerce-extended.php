@@ -338,13 +338,14 @@ class WMC_WooCommerce_Extended {
 
 		self::register( 'wmc/assign-woo-product-categories', array(
 			'label'       => 'Assign Categories to Product',
-			'description' => 'Set the categories for a product',
+			'description' => 'Set or append categories for a product. Pass append:true to add to existing categories instead of replacing them.',
 			'category'    => 'wp-content-manager',
 			'input_schema' => array(
 				'type' => 'object',
 				'properties' => array(
 					'product_id'   => array( 'type' => 'integer' ),
 					'category_ids' => array( 'type' => 'array', 'items' => array( 'type' => 'integer' ) ),
+					'append'       => array( 'type' => 'boolean', 'description' => 'If true, add to existing categories instead of replacing. Default: false.' ),
 				),
 				'required' => array( 'product_id', 'category_ids' ),
 			),
@@ -1209,12 +1210,28 @@ class WMC_WooCommerce_Extended {
 	}
 
 	public static function assign_product_categories( $input ) {
+		if ( ! self::is_enabled( 'woocommerce', 'write' ) ) {
+			return self::get_disabled_error( 'write' );
+		}
 		if ( $err = self::woo_check() ) return $err;
 		$product = wc_get_product( (int) $input['product_id'] );
 		if ( ! $product ) return array( 'success' => false, 'message' => 'Product not found' );
-		$product->set_category_ids( array_map( 'intval', $input['category_ids'] ) );
+
+		$new_ids = array_map( 'intval', $input['category_ids'] );
+
+		if ( ! empty( $input['append'] ) ) {
+			$existing = array_map( 'intval', $product->get_category_ids() );
+			$new_ids  = array_values( array_unique( array_merge( $existing, $new_ids ) ) );
+		}
+
+		$product->set_category_ids( $new_ids );
 		$product->save();
-		return array( 'success' => true, 'message' => 'Categories assigned' );
+
+		return array(
+			'success'      => true,
+			'message'      => 'Categories assigned',
+			'category_ids' => $new_ids,
+		);
 	}
 
 	public static function get_low_stock( $input ) {

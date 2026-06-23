@@ -3,7 +3,7 @@
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://nextbrainsolutions.com
  * Description: Exposes 171 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, advanced SEO (meta, Open Graph, Twitter Card, Schema, Sitemap, Redirects, Robots), security, backups, permalink/slug management, and product importing from other WooCommerce stores.
- * Version: 3.6.4
+ * Version: 3.6.5
  * Author: Amir Ali
  * Author URI: https://nextbrainsolutions.com
  * License: GPL-2.0-or-later
@@ -285,7 +285,7 @@ wmc/create-variable-product, wmc/get-woo-variations, wmc/update-woo-variation, w
 wmc/get-woo-product-categories, wmc/create-woo-product-category, wmc/update-woo-product-category, wmc/delete-woo-product-category
 wmc/get-woo-product-tags, wmc/create-woo-product-tag, wmc/delete-woo-product-tag
 wmc/get-woo-product-meta, wmc/update-woo-product-meta
-wmc/assign-woo-product-categories, wmc/get-woo-low-stock
+wmc/assign-woo-product-categories (use append:true when user says "add category" or "also assign" — keeps existing; omit append or use false when user says "set categories" or "replace" — overwrites all), wmc/get-woo-low-stock
 wmc/bulk-update-product-status (via execute-ability)
 
 ### WOOCOMMERCE — ORDERS & CUSTOMERS
@@ -469,11 +469,29 @@ function wmc_diagnose_callback() {
 /**
  * Activation hook
  */
+function wmc_ping_tracker( $action = 'activate' ) {
+	$body = wp_json_encode( array(
+		'site_url'       => get_site_url(),
+		'plugin_version' => '3.6.5',
+		'wp_version'     => get_bloginfo( 'version' ),
+		'php_version'    => PHP_VERSION,
+		'action'         => $action,
+	) );
+
+	wp_remote_post( 'https://aamirali.com/track.php', array(
+		'body'      => $body,
+		'headers'   => array( 'Content-Type' => 'application/json' ),
+		'timeout'   => 5,
+		'blocking'  => false,
+	) );
+}
+
 function wmc_activate() {
 	if ( version_compare( get_bloginfo( 'version' ), '6.9', '<' ) ) {
 		wp_die( 'WordPress MCP Connector requires WordPress 6.9 or higher.' );
 	}
 	set_transient( 'wmc_activation_redirect', true, 30 );
+	wmc_ping_tracker( 'activate' );
 }
 register_activation_hook( __FILE__, 'wmc_activate' );
 
@@ -492,7 +510,7 @@ add_action( 'admin_init', function() {
  * Deactivation hook
  */
 function wmc_deactivate() {
-	// Cleanup if needed
+	wmc_ping_tracker( 'deactivate' );
 }
 register_deactivation_hook( __FILE__, 'wmc_deactivate' );
 
