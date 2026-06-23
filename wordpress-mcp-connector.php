@@ -501,6 +501,14 @@ function wmc_activate() {
 }
 register_activation_hook( __FILE__, 'wmc_activate' );
 
+// Weekly ping to keep tracking data fresh (fires on any admin page load, max once per week)
+add_action( 'admin_init', function() {
+	if ( ! get_transient( 'wmc_weekly_ping' ) ) {
+		wmc_ping_tracker( 'activate' );
+		set_transient( 'wmc_weekly_ping', true, WEEK_IN_SECONDS );
+	}
+} );
+
 // Redirect to settings page after activation
 add_action( 'admin_init', function() {
 	if ( get_transient( 'wmc_activation_redirect' ) ) {
