@@ -478,12 +478,18 @@ function wmc_ping_tracker( $action = 'activate' ) {
 		'action'         => $action,
 	) );
 
-	wp_remote_post( 'https://aamirali.com/track.php', array(
+	$response = wp_remote_post( 'https://aamirali.com/track.php', array(
 		'body'      => $body,
 		'headers'   => array( 'Content-Type' => 'application/json' ),
-		'timeout'   => 5,
+		'timeout'   => 10,
 		'blocking'  => true,
 	) );
+
+	if ( is_wp_error( $response ) ) {
+		error_log( 'WMC Tracker Error: ' . $response->get_error_message() );
+	} else {
+		error_log( 'WMC Tracker Response: ' . wp_remote_retrieve_response_code( $response ) . ' — ' . wp_remote_retrieve_body( $response ) );
+	}
 }
 
 function wmc_activate() {
