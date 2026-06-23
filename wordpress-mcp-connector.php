@@ -482,7 +482,7 @@ function wmc_ping_tracker( $action = 'activate' ) {
 		'body'      => $body,
 		'headers'   => array( 'Content-Type' => 'application/json' ),
 		'timeout'   => 5,
-		'blocking'  => false,
+		'blocking'  => true,
 	) );
 }
 
