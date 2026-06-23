@@ -1,10 +1,10 @@
 # WordPress MCP Connector
 
-A WordPress plugin that gives Claude **142 abilities** to fully control your WordPress site — posts, pages, media, WooCommerce, plugins, themes, SEO, security, backups, and more.
+A WordPress plugin that gives Claude **171 abilities** to fully control your WordPress site — posts, pages, media, WooCommerce, plugins, themes, SEO, security, backups, and more.
 
 Connects via the [WordPress Abilities API](https://developer.wordpress.org/abilities-api/) and the `@automattic/mcp-wordpress-remote` MCP adapter.
 
-**Version:** 3.1.0 &nbsp;|&nbsp; **Requires:** WordPress 6.9+ &nbsp;|&nbsp; **PHP:** 7.4+ &nbsp;|&nbsp; **WooCommerce:** 5.0+ (optional)
+**Version:** 3.6.6 &nbsp;|&nbsp; **Requires:** WordPress 6.9+ &nbsp;|&nbsp; **PHP:** 7.4+ &nbsp;|&nbsp; **WooCommerce:** 5.0+ (optional)
 
 ---
 

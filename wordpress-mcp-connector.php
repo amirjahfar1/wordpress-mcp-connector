@@ -3,7 +3,7 @@
  * Plugin Name: WordPress MCP Connector
  * Plugin URI: https://nextbrainsolutions.com
  * Description: Exposes 171 abilities via Abilities API for MCP integration. Full control over WordPress, WooCommerce, files, database, advanced SEO (meta, Open Graph, Twitter Card, Schema, Sitemap, Redirects, Robots), security, backups, permalink/slug management, and product importing from other WooCommerce stores.
- * Version: 3.6.5
+ * Version: 3.6.6
  * Author: Amir Ali
  * Author URI: https://nextbrainsolutions.com
  * License: GPL-2.0-or-later
