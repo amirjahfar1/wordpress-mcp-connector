@@ -815,17 +815,29 @@ class WMC_Abilities {
 				'input_schema' => array(
 					'type'       => 'object',
 					'properties' => array(
-						'title'       => array(
+						'url'             => array(
+							'type'        => 'string',
+							'description' => 'Direct URL of the image/file to download and attach. Required to actually upload a real file.',
+						),
+						'title'           => array(
 							'type'        => 'string',
 							'description' => 'Media title',
 						),
-						'description' => array(
+						'description'     => array(
 							'type'        => 'string',
 							'description' => 'Media description',
 						),
-						'alt_text'    => array(
+						'alt_text'        => array(
 							'type'        => 'string',
 							'description' => 'Alt text for images',
+						),
+						'post_id'         => array(
+							'type'        => 'integer',
+							'description' => 'Optional. Post/product ID to attach this media to.',
+						),
+						'set_as_featured' => array(
+							'type'        => 'boolean',
+							'description' => 'Optional. If true and post_id is set, also sets this as the featured image.',
 						),
 					),
 				),
@@ -2011,18 +2023,51 @@ class WMC_Abilities {
 	 * Create Media callback
 	 */
 	public static function create_media( $input ) {
-		// CHECK PERMISSION
 		if ( ! self::is_enabled( 'media', 'write' ) ) {
 			return self::get_disabled_error( 'Create' );
 		}
 
-		// Note: In a real implementation, you'd handle file uploads from the request
-		// This is a placeholder for metadata creation
+		if ( ! empty( $input['url'] ) ) {
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+
+			$parent_id     = ! empty( $input['post_id'] ) ? (int) $input['post_id'] : 0;
+			$attachment_id = media_sideload_image( $input['url'], $parent_id, $input['title'] ?? '', 'id' );
+
+			if ( is_wp_error( $attachment_id ) ) {
+				return array(
+					'success' => false,
+					'message' => $attachment_id->get_error_message(),
+				);
+			}
+
+			$update = array( 'ID' => $attachment_id );
+			if ( isset( $input['title'] ) )       $update['post_title']   = $input['title'];
+			if ( isset( $input['description'] ) )  $update['post_content'] = $input['description'];
+			if ( count( $update ) > 1 )            wp_update_post( $update );
+
+			if ( isset( $input['alt_text'] ) ) {
+				update_post_meta( $attachment_id, '_wp_attachment_image_alt', $input['alt_text'] );
+			}
+
+			if ( $parent_id && ! empty( $input['set_as_featured'] ) ) {
+				set_post_thumbnail( $parent_id, $attachment_id );
+			}
+
+			return array(
+				'id'      => $attachment_id,
+				'url'     => wp_get_attachment_url( $attachment_id ),
+				'success' => true,
+			);
+		}
+
+		// No URL provided — metadata-only fallback
 		$media_data = array(
-			'post_title'     => $input['title'] ?? 'Media',
-			'post_content'   => $input['description'] ?? '',
-			'post_status'    => 'inherit',
-			'post_type'      => 'attachment',
+			'post_title'   => $input['title'] ?? 'Media',
+			'post_content' => $input['description'] ?? '',
+			'post_status'  => 'inherit',
+			'post_type'    => 'attachment',
 		);
 
 		$attachment_id = wp_insert_post( $media_data );
@@ -2034,7 +2079,6 @@ class WMC_Abilities {
 			);
 		}
 
-		// Update alt text if provided
 		if ( isset( $input['alt_text'] ) ) {
 			update_post_meta( $attachment_id, '_wp_attachment_image_alt', $input['alt_text'] );
 		}
