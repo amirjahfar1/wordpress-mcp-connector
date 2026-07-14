@@ -2,6 +2,36 @@
 
 ---
 
+## v3.7.0 — 2026-07-14
+
+### Added — 13 SEO Skills + Non-Technical Setup Guide
+
+Adds a `skills/` directory of Claude skills that chain the existing SEO/technical abilities into repeatable workflows, plus a `SETUP.md` written for non-technical users.
+
+#### New Skills
+
+- `on-page-seo-audit` — deep audit of a single post/page/product
+- `site-wide-seo-health-check` — full-site scan for missing/duplicate meta, broken links, 404s, sitemap gaps
+- `image-seo-fixer` — find and fix missing alt text, compress oversized images
+- `broken-link-redirect-fixer` — detect broken links/404s and set up 301 redirects
+- `schema-markup-builder` — add/verify JSON-LD schema (Article, Product, FAQ, HowTo, etc.)
+- `meta-bulk-optimizer` — bulk-generate missing SEO titles/descriptions/keywords
+- `duplicate-content-canonical-check` — find and fix duplicate meta with rewrites or canonical URLs
+- `indexability-audit` — find pages accidentally blocked by noindex, robots.txt, or sitemap exclusion
+- `slug-permalink-audit` — flag non-SEO-friendly slugs and fix permalink structure
+- `woocommerce-product-seo-optimizer` — SEO audit/fixes for product pages and categories
+- `social-preview-optimizer` — fix Open Graph/Twitter Card previews for social sharing
+- `error-log-diagnostics` — diagnose PHP errors/site health issues causing SEO regressions
+- `weekly-technical-seo-report` — master skill chaining the others into one prioritized report
+
+#### Docs
+
+- **Added:** `SETUP.md` — step-by-step, non-technical walkthrough covering Node.js installation (required for the `npx @automattic/mcp-wordpress-remote` connector), plugin installation, Application Password generation, and Claude Code/Desktop configuration
+- **Added:** "Available Skills" and "Skill Usage Examples" sections in `README.md`
+- **Fixed:** `WMC_VERSION` constant was out of sync with the plugin header version (`3.6.4` vs `3.6.7`) — both now read `3.7.0`
+
+---
+
 ## v3.1.0 — 2026-06-20
 
 ### Simplified Connection — No OAuth, No Python Script

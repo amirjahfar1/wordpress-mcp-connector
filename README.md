@@ -4,7 +4,7 @@ A WordPress plugin that gives Claude **171 abilities** to fully control your Wor
 
 Connects via the [WordPress Abilities API](https://developer.wordpress.org/abilities-api/) and the `@automattic/mcp-wordpress-remote` MCP adapter.
 
-**Version:** 3.6.7 &nbsp;|&nbsp; **Requires:** WordPress 6.9+ &nbsp;|&nbsp; **PHP:** 7.4+ &nbsp;|&nbsp; **WooCommerce:** 5.0+ (optional)
+**Version:** 3.7.0 &nbsp;|&nbsp; **Requires:** WordPress 6.9+ &nbsp;|&nbsp; **PHP:** 7.4+ &nbsp;|&nbsp; **WooCommerce:** 5.0+ (optional)
 
 ---
 
