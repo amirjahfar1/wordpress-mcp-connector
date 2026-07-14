@@ -8,6 +8,8 @@ Connects via the [WordPress Abilities API](https://developer.wordpress.org/abili
 
 ---
 
+New here? The full non-technical walkthrough — including installing Node.js and troubleshooting — is in **[SETUP.md](SETUP.md)**. The steps below are the short version.
+
 ## Quick Start
 
 ### Step 1 — Install the Plugin
@@ -412,6 +414,60 @@ Import products from any public WooCommerce store — images, prices, categories
 | `wmc/import-woo-categories` | Import only the category structure |
 
 **Price adjustment example:** Import products at 90% of original price, or add a fixed markup.
+
+---
+
+## Available Skills
+
+Skills chain multiple abilities together into one repeatable workflow instead of calling abilities one at a time. All 13 live under [`skills/`](skills/) and focus on technical/on-page SEO.
+
+### Content & Meta
+
+| Skill | What It Does |
+|---|---|
+| [`on-page-seo-audit`](skills/on-page-seo-audit/SKILL.md) | Deep SEO audit of a single post/page/product |
+| [`meta-bulk-optimizer`](skills/meta-bulk-optimizer/SKILL.md) | Bulk-generate missing SEO titles/descriptions/keywords |
+| [`duplicate-content-canonical-check`](skills/duplicate-content-canonical-check/SKILL.md) | Find and fix duplicate meta with rewrites or canonical URLs |
+
+### Technical SEO
+
+| Skill | What It Does |
+|---|---|
+| [`site-wide-seo-health-check`](skills/site-wide-seo-health-check/SKILL.md) | Full-site scan for missing/duplicate meta, broken links, 404s, sitemap gaps |
+| [`indexability-audit`](skills/indexability-audit/SKILL.md) | Find pages accidentally blocked by noindex, robots.txt, or sitemap exclusion |
+| [`broken-link-redirect-fixer`](skills/broken-link-redirect-fixer/SKILL.md) | Detect broken links/404s and set up 301 redirects |
+| [`slug-permalink-audit`](skills/slug-permalink-audit/SKILL.md) | Flag non-SEO-friendly slugs and fix permalink structure |
+| [`error-log-diagnostics`](skills/error-log-diagnostics/SKILL.md) | Diagnose PHP errors/site health issues causing SEO regressions |
+
+### Media & Rich Results
+
+| Skill | What It Does |
+|---|---|
+| [`image-seo-fixer`](skills/image-seo-fixer/SKILL.md) | Add missing alt text and compress oversized images |
+| [`schema-markup-builder`](skills/schema-markup-builder/SKILL.md) | Add/verify JSON-LD schema (Article, Product, FAQ, HowTo, etc.) |
+| [`social-preview-optimizer`](skills/social-preview-optimizer/SKILL.md) | Fix Open Graph/Twitter Card previews for social sharing |
+
+### WooCommerce & Reporting
+
+| Skill | What It Does |
+|---|---|
+| [`woocommerce-product-seo-optimizer`](skills/woocommerce-product-seo-optimizer/SKILL.md) | SEO audit/fixes for product pages and categories |
+| [`weekly-technical-seo-report`](skills/weekly-technical-seo-report/SKILL.md) | Master skill — chains the others into one prioritized report |
+
+---
+
+## Skill Usage Examples
+
+- *"Run an on-page SEO audit on my homepage."*
+- *"Do a full site-wide SEO health check."*
+- *"Find all images missing alt text and fix them."*
+- *"Find and fix my site's broken links and 404s."*
+- *"Add schema markup to all my blog posts."*
+- *"Bulk-generate SEO titles and descriptions for posts that are missing them."*
+- *"Check my site for duplicate meta descriptions."*
+- *"Why isn't this page showing up in Google? Check if it's blocked."*
+- *"Audit my product pages for SEO issues."*
+- *"Give me a full weekly technical SEO report."*
 
 ---
 
